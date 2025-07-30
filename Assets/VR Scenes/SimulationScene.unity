@@ -4085,8 +4085,8 @@ MonoBehaviour:
   leftController: {fileID: 1669104420}
   rightController: {fileID: 830635548}
   frontWheelTransform: {fileID: 7320580834850986713}
-  rotationOffsets: {x: -88.5, y: -366.9, z: -3.21}
-  positionOffsets: {x: 0, y: 0, z: 0}
+  frontHandleAssembly: {fileID: 1583500173912304018}
+  handleBarRotationOffset: {x: -69, y: 0, z: 0}
   currentturnAngle: 2
   receiver: {fileID: 494451000}
   speedText: {fileID: 1150461926025886709}
@@ -4102,6 +4102,7 @@ MonoBehaviour:
   useStabilityAssist: 1
   stabilityForce: 50
   gyroscopicForce: 10
+  backWheelTransform: {fileID: 8037689232952209729}
 --- !u!114 &494451000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27925,27 +27926,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 543450653185199661}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &1629515983521123253
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1957962805895196842}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 0
-  serializedVersion: 3
-  m_Size: {x: 1, y: 0.29506683, z: 1}
-  m_Center: {x: 0, y: -4.372534, z: 0}
 --- !u!33 &1632056467515712252
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -29446,7 +29426,6 @@ GameObject:
   - component: {fileID: 5049668184347592858}
   - component: {fileID: 9162608132760828923}
   - component: {fileID: 7127310974462082007}
-  - component: {fileID: 1629515983521123253}
   m_Layer: 0
   m_Name: XRRigParent
   m_TagString: Untagged
@@ -57839,7 +57818,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1486386677011084156}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.10515201, y: -0.6992447, z: 0.10515207, w: 0.6992446}
+  m_LocalRotation: {x: 0.39745307, y: 0.5848342, z: 0.39745307, w: 0.5848342}
   m_LocalPosition: {x: 0, y: 0.00061564846, z: -0.0039791674}
   m_LocalScale: {x: 1.3828588, y: 1.382859, z: 1.382859}
   m_ConstrainProportionsScale: 0
@@ -57851,7 +57830,7 @@ Transform:
   - {fileID: 4124391827852619254}
   - {fileID: 2729148233175997539}
   m_Father: {fileID: 7882618431972904667}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 180, y: -90, z: -111.6}
 --- !u!23 &7323981796099346986
 MeshRenderer:
   m_ObjectHideFlags: 0

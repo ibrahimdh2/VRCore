@@ -7,9 +7,10 @@ public class BikeController : MonoBehaviour
     [Header("Handlebar Controllers")]
     public Transform leftController;
     public Transform rightController;
-    public Transform frontWheelTransform;
-    public Vector3 rotationOffsets;
-    public Vector3 positionOffsets;
+    public Transform frontWheelTransform; // The actual wheel mesh that spins
+    public Transform frontHandleAssembly; // Parent object that steers left/right
+    public Vector3 handleBarRotationOffset;
+  
 
     public enum TurnAngle { X, Y, Z }
     public TurnAngle currentturnAngle;
@@ -41,7 +42,12 @@ public class BikeController : MonoBehaviour
     public float stabilityForce = 50f;
     public float gyroscopicForce = 10f;
 
-   
+    // For wheel visual updates
+    public Transform backWheelTransform;
+
+    // Wheel rotation tracking
+    private float frontWheelRotation = 0f;
+    private float backWheelRotation = 0f;
 
     private Rigidbody rb;
 
@@ -134,21 +140,26 @@ public class BikeController : MonoBehaviour
             frontWheelCollider.steerAngle = steerAngle;
         }
 
-        // Also update the visual front wheel rotation
-        if (frontWheelTransform != null)
+        // Rotate the front handle assembly (parent) for steering visualization
+        if (frontHandleAssembly != null)
         {
+            Vector3 steerRotation = Vector3.zero;
             switch (currentturnAngle)
             {
                 case TurnAngle.X:
-                    frontWheelTransform.localRotation = Quaternion.Euler(turnAngle + rotationOffsets.x, rotationOffsets.y, rotationOffsets.z);
+                    steerRotation.x = turnAngle ;
+                    
                     break;
                 case TurnAngle.Y:
-                    frontWheelTransform.localRotation = Quaternion.Euler(rotationOffsets.x, turnAngle + rotationOffsets.y, rotationOffsets.z);
+             
+                    steerRotation.y = turnAngle ;
+                  ;
                     break;
                 case TurnAngle.Z:
-                    frontWheelTransform.localRotation = Quaternion.Euler(rotationOffsets.x, rotationOffsets.y, turnAngle + rotationOffsets.z);
+                    steerRotation.z = turnAngle;
                     break;
             }
+            frontHandleAssembly.localRotation = Quaternion.Euler(steerRotation + handleBarRotationOffset);
         }
     }
 
@@ -196,54 +207,52 @@ public class BikeController : MonoBehaviour
 
     private void UpdateWheelVisuals()
     {
-        // Update front wheel visual position and rotation
-        if (frontWheelCollider != null && frontWheelTransform != null)
+        // Calculate wheel rotation based on movement
+        float wheelCircumference = 2 * Mathf.PI * (frontWheelCollider != null ? frontWheelCollider.radius : 0.33f); // Default radius if null
+        float distanceTraveled = rb.linearVelocity.magnitude * Time.deltaTime;
+        float wheelRotationDelta = (distanceTraveled / wheelCircumference) * 360f; // Convert to degrees
+
+        // Update front wheel - ONLY spinning rotation, steering is handled by parent
+        if (frontWheelTransform != null)
+        {
+            frontWheelRotation += wheelRotationDelta;
+
+            // Apply only the spinning rotation to the wheel mesh
+            // The steering rotation is handled by frontHandleAssembly
+            frontWheelTransform.localRotation = Quaternion.Euler(frontWheelRotation, 0, 0);
+        }
+
+        // Update back wheel - spinning rotation only
+        if (backWheelTransform != null)
+        {
+            backWheelRotation += wheelRotationDelta;
+            backWheelTransform.localRotation = Quaternion.Euler(backWheelRotation, 0, 0);
+        }
+
+        // Update wheel positions based on wheel collider positions
+        UpdateWheelPositions();
+    }
+
+    private void UpdateWheelPositions()
+    {
+        // Update front wheel assembly position
+        if (frontWheelCollider != null && frontHandleAssembly != null)
         {
             Vector3 pos;
             Quaternion rot;
             frontWheelCollider.GetWorldPose(out pos, out rot);
 
-            // Update position with offset
-            frontWheelTransform.position = pos + transform.TransformDirection(positionOffsets);
-
-            // The steering rotation is already handled in ApplySteering()
-            // But we need to add the wheel spinning rotation
-            Vector3 eulerRot = rot.eulerAngles;
-            switch (currentturnAngle)
-            {
-                case TurnAngle.X:
-                    frontWheelTransform.rotation = Quaternion.Euler(
-                        frontWheelCollider.steerAngle + rotationOffsets.x,
-                        eulerRot.y + rotationOffsets.y,
-                        eulerRot.z + rotationOffsets.z
-                    );
-                    break;
-                case TurnAngle.Y:
-                    frontWheelTransform.rotation = Quaternion.Euler(
-                        eulerRot.x + rotationOffsets.x,
-                        frontWheelCollider.steerAngle + rotationOffsets.y,
-                        eulerRot.z + rotationOffsets.z
-                    );
-                    break;
-                case TurnAngle.Z:
-                    frontWheelTransform.rotation = Quaternion.Euler(
-                        eulerRot.x + rotationOffsets.x,
-                        eulerRot.y + rotationOffsets.y,
-                        frontWheelCollider.steerAngle + rotationOffsets.z
-                    );
-                    break;
-            }
+            // Position the entire front assembly based on wheel collider
         }
 
-        //// Update back wheel visual position and rotation
-        //if (backWheelCollider != null && backWheelTransform != null)
-        //{
-        //    Vector3 pos;
-        //    Quaternion rot;
-        //    backWheelCollider.GetWorldPose(out pos, out rot);
-        //    backWheelTransform.position = pos;
-        //    backWheelTransform.rotation = rot;
-        //}
+        // Update back wheel position
+        if (backWheelCollider != null && backWheelTransform != null)
+        {
+            Vector3 pos;
+            Quaternion rot;
+            backWheelCollider.GetWorldPose(out pos, out rot);
+            backWheelTransform.position = pos;
+        }
     }
 
     private float CalculateHandlebarAngle()
