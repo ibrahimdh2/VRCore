@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 75b08360a33d0714eaae2eb92511abdb
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Materials/AJ.mat
+  uploadId: 433102

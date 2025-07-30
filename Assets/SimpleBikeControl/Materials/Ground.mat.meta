@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 7d5d84f70621ae345be55a3dc6bb6c44
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Materials/Ground.mat
+  uploadId: 433102

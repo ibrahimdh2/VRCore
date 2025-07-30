@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 01937c4e347d7564b8e8ee5ce4cdfb59
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Materials/New Material.mat
+  uploadId: 433102

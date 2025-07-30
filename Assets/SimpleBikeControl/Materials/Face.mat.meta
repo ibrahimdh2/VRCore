@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: bb9551ad4abbd6a4a9bf9ef3a8f9d688
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Materials/Face.mat
+  uploadId: 433102

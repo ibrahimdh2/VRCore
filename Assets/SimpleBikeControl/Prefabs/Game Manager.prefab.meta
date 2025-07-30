@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 304ebe0a397f1c140b1e736370bdb142
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Prefabs/Game Manager.prefab
+  uploadId: 433102

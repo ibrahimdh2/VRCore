@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: fabda0d6295e918429b88dad63cdbaf2
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Prefabs/BikeTest.prefab
+  uploadId: 433102

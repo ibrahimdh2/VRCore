@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: b2a0637b6d3d49d468dff6a5d8a4922f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Scripts/Biker.cs
+  uploadId: 433102

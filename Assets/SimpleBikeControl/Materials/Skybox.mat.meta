@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 350c353aeddc95048b32dbd485cb86d2
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Materials/Skybox.mat
+  uploadId: 433102

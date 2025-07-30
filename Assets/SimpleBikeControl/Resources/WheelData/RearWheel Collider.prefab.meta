@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 28b168802b7d36c45b1fd988e45bde48
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Resources/WheelData/RearWheel Collider.prefab
+  uploadId: 433102

@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: db2c9e738ce3e6d438ccc16567b4142b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Scripts/BeforePlayPanel.cs
+  uploadId: 433102

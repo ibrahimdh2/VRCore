@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e408b2ebecda8c64fb9844e77dc58c4a
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194129
+  packageName: Simple bike control
+  packageVersion: 1.0
+  assetPath: Assets/SimpleBikeControl/Prefabs/AJ.prefab
+  uploadId: 433102
