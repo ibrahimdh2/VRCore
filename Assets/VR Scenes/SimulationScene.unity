@@ -4043,27 +4043,55 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 789440189}
     m_Modifications:
+    - target: {fileID: 718348647677509174, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+      propertyPath: speedReceiver
+      value: 
+      objectReference: {fileID: 494451000}
     - target: {fileID: 718348647677509174, guid: c4b46deec2184274486f84c33447f0da, type: 3}
       propertyPath: waypointMovement
       value: 
-      objectReference: {fileID: 494450998}
+      objectReference: {fileID: 0}
     - target: {fileID: 1612579147650714154, guid: c4b46deec2184274486f84c33447f0da, type: 3}
       propertyPath: m_Name
       value: Bike (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 1612579147650714154, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2145208988456128843, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 2145208988456128843, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 2145208988456128843, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 2145208988456128843, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3097973639990351809, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7862255229256999465, guid: c4b46deec2184274486f84c33447f0da, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 191.96
+      value: -0.733
       objectReference: {fileID: 0}
     - target: {fileID: 7862255229256999465, guid: c4b46deec2184274486f84c33447f0da, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.319
+      value: -0.80383456
       objectReference: {fileID: 0}
     - target: {fileID: 7862255229256999465, guid: c4b46deec2184274486f84c33447f0da, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 268.07
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7862255229256999465, guid: c4b46deec2184274486f84c33447f0da, type: 3}
       propertyPath: m_LocalRotation.w
@@ -4106,37 +4134,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1612579147650714154, guid: c4b46deec2184274486f84c33447f0da, type: 3}
       insertIndex: -1
       addedObject: {fileID: 494450999}
-    - targetCorrespondingSourceObject: {fileID: 1612579147650714154, guid: c4b46deec2184274486f84c33447f0da, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 494450998}
   m_SourcePrefab: {fileID: 100100000, guid: c4b46deec2184274486f84c33447f0da, type: 3}
 --- !u!1 &494450997 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1612579147650714154, guid: c4b46deec2184274486f84c33447f0da, type: 3}
   m_PrefabInstance: {fileID: 494450996}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &494450998
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 494450997}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2856a9a2932286b4da7c8062634e14e2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 0
-  rotateSpeed: 0
-  wayPoints: []
-  wayPointIndex: 0
-  currentWayPoint: {x: 0, y: 0, z: 0}
-  currentWayPointTraversalOrder: 0
-  yPos: 0
-  tiltIntensity: 0
-  tiltSpeed: 0
-  followWayPoints: 0
 --- !u!114 &494450999
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4162,7 +4165,7 @@ MonoBehaviour:
   bikeBackBody: {fileID: 494451001}
   turnFollowSpeed: 2
   backBodyOffset: {x: 179.1, y: 85.3, z: 90.8}
-  maxTurnAngle: 45
+  maxTurnAngle: 65
   turnSensitivity: 1
   rotationMultiplier: 300
 --- !u!114 &494451000
@@ -4205,6 +4208,11 @@ MonoBehaviour:
 --- !u!4 &494451004 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1583500173692588198, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+  m_PrefabInstance: {fileID: 494450996}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &494451007 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7862255229256999465, guid: c4b46deec2184274486f84c33447f0da, type: 3}
   m_PrefabInstance: {fileID: 494450996}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &500913544
@@ -7996,6 +8004,38 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 787382717}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &789440188
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 789440189}
+  m_Layer: 0
+  m_Name: Bike Container
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &789440189
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 789440188}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 192.39903, y: 1.1228346, z: 267.98596}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 494451007}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &800197635
 GameObject:
   m_ObjectHideFlags: 0
@@ -60599,4 +60639,4 @@ SceneRoots:
   - {fileID: 1253813286}
   - {fileID: 1642583245}
   - {fileID: 1505740289}
-  - {fileID: 494450996}
+  - {fileID: 789440189}

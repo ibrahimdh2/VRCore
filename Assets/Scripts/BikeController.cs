@@ -28,7 +28,7 @@ public class BikeController : MonoBehaviour
     public Transform wheelForwardTransform;
 
     [Header("Back Body Follow")]
-    public Transform bikeBackBody;
+    public Transform bikeContainer; //turn this when cycle turns
     public float turnFollowSpeed = 2f;
     private float moveSpeed;
     public Vector3 backBodyOffset;
@@ -80,6 +80,7 @@ public class BikeController : MonoBehaviour
             if (bikeBackBody != null)
             {
                 // Add back body following logic here if needed
+                //turn speed should be relative to speed like real life the faster your speed is the 
             }
         }
     }
