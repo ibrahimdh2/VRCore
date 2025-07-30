@@ -77,10 +77,35 @@ public class BikeController : MonoBehaviour
             forwardDir.Normalize();
             transform.position += forwardDir * moveSpeed * Time.deltaTime;
 
-            if (bikeBackBody != null)
+            if (bikeContainer != null)
             {
-                // Add back body following logic here if needed
-                //turn speed should be relative to speed like real life the faster your speed is the 
+                // Calculate target rotation based on wheel forward direction
+                Vector3 targetForward = wheelForwardTransform.forward;
+                targetForward.y = 0f; // Keep it horizontal
+                targetForward.Normalize();
+
+                // Create target rotation
+                Quaternion targetRotation = Quaternion.LookRotation(targetForward, Vector3.up);
+
+                // Apply back body offset rotation if needed
+                if (backBodyOffset != Vector3.zero)
+                {
+                    Quaternion offsetRotation = Quaternion.Euler(backBodyOffset);
+                    targetRotation *= offsetRotation;
+                }
+
+                // Smoothly interpolate to target rotation
+                // The turn follow speed can be adjusted based on bike speed for more realistic behavior
+                float actualTurnSpeed = turnFollowSpeed;
+
+                // Optional: Make turn speed relative to bike speed (faster bike = slower turn response)
+                if (moveSpeed > 0)
+                {
+                    // You can uncomment and adjust this formula for speed-dependent turning
+                    actualTurnSpeed = turnFollowSpeed * (1f / (1f + moveSpeed * 0.1f));
+                    bikeContainer.rotation = Quaternion.Slerp(bikeContainer.rotation, targetRotation, actualTurnSpeed * Time.deltaTime);
+                }
+
             }
         }
     }

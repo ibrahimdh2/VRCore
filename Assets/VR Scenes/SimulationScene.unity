@@ -4162,7 +4162,7 @@ MonoBehaviour:
   rotationOffsets: {x: -88.5, y: -366.9, z: -3.21}
   positionOffset: {x: -0.02, y: 0.35, z: -0.47}
   wheelForwardTransform: {fileID: 494451002}
-  bikeBackBody: {fileID: 494451001}
+  bikeContainer: {fileID: 648251313}
   turnFollowSpeed: 2
   backBodyOffset: {x: 179.1, y: 85.3, z: 90.8}
   maxTurnAngle: 65
@@ -4184,11 +4184,6 @@ MonoBehaviour:
   decelerationRate: 5
   simulate: 0
   simulateSpeed: 1
---- !u!4 &494451001 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8564199859715742, guid: c4b46deec2184274486f84c33447f0da, type: 3}
-  m_PrefabInstance: {fileID: 494450996}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &494451002 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2145208988456128843, guid: c4b46deec2184274486f84c33447f0da, type: 3}
@@ -6103,6 +6098,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 643459233}
   m_CullTransparentMesh: 1
+--- !u!4 &648251313 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5627730671390210281, guid: c4b46deec2184274486f84c33447f0da, type: 3}
+  m_PrefabInstance: {fileID: 494450996}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &651041113
 GameObject:
   m_ObjectHideFlags: 0
