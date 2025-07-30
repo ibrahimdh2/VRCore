@@ -10,7 +10,10 @@ public class BikeController : MonoBehaviour
     public Transform frontWheelTransform; // The actual wheel mesh that spins
     public Transform frontHandleAssembly; // Parent object that steers left/right
     public Vector3 handleBarRotationOffset;
-  
+    [Header("Steering Clamp")]
+    public float minSteerClamp = -30f;
+    public float maxSteerClamp = 30f;
+
 
     public enum TurnAngle { X, Y, Z }
     public TurnAngle currentturnAngle;
@@ -132,28 +135,23 @@ public class BikeController : MonoBehaviour
 
     private void ApplySteering(float turnAngle)
     {
-        // Apply the handlebar angle directly to the front wheel collider
         if (frontWheelCollider != null)
         {
-            // Clamp the steering angle to prevent unrealistic turns
-            float steerAngle = Mathf.Clamp(turnAngle, -maxSteerAngle, maxSteerAngle);
+            // Clamp the steering angle using inspector-defined min/max
+            float steerAngle = Mathf.Clamp(turnAngle, minSteerClamp, maxSteerClamp);
             frontWheelCollider.steerAngle = steerAngle;
         }
 
-        // Rotate the front handle assembly (parent) for steering visualization
         if (frontHandleAssembly != null)
         {
             Vector3 steerRotation = Vector3.zero;
             switch (currentturnAngle)
             {
                 case TurnAngle.X:
-                    steerRotation.x = turnAngle ;
-                    
+                    steerRotation.x = turnAngle;
                     break;
                 case TurnAngle.Y:
-             
-                    steerRotation.y = turnAngle ;
-                  ;
+                    steerRotation.y = turnAngle;
                     break;
                 case TurnAngle.Z:
                     steerRotation.z = turnAngle;
