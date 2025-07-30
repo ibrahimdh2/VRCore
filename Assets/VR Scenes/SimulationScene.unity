@@ -4182,7 +4182,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speedTimeout: 2
   decelerationRate: 5
-  simulate: 0
+  simulate: 1
   simulateSpeed: 1
 --- !u!4 &494451002 stripped
 Transform:
