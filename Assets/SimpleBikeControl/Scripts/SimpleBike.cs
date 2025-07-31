@@ -45,8 +45,8 @@ namespace KikiNgao.SimpleBikeControl
 
         public bool IsReverse() => false;
         public bool IsMovingToward => speedReceiver.speedKph > 0;
-        private bool IsRest() => speedReceiver.speedKph == 0;
-        public bool IsMoving() =>  speedReceiver.speedKph > 0.1f || m_Rigidbody.linearVelocity.sqrMagnitude > 0.01f;
+        private bool IsRest() => speedReceiver.speedKph < 0.1f; // Changed threshold
+        public bool IsMoving() => speedReceiver.speedKph > 0.1f || m_Rigidbody.linearVelocity.sqrMagnitude > 0.01f;
         private bool IsTurning() => frontWheelCollider.steerAngle != 0;
         private bool IsSpeedUp() => false;
 
@@ -93,12 +93,15 @@ namespace KikiNgao.SimpleBikeControl
         [SerializeField] private float rotationMultiplier;
         [SerializeField] private int maxTurnAngle;
 
+
+
         private void FixedUpdate()
         {
             if (!ReadyToRide()) return;
 
             if (IsRest()) Rest();
-            if (IsMoving()) MovingBike();
+            else if (IsMoving()) MovingBike();
+
             if (IsTurning() || (leftController && rightController)) TurningBike();
 
             if (!FreezeCrankset) UpdateCranksetRotation();
@@ -110,7 +113,7 @@ namespace KikiNgao.SimpleBikeControl
 
         private void UpdateLegPower(bool speedUp)
         {
-           
+
         }
 
         private void MovingBike()
@@ -120,7 +123,9 @@ namespace KikiNgao.SimpleBikeControl
             m_Rigidbody.angularDamping = 5 + GetBikeSpeedMs() / (m_Rigidbody.mass / 10);
 
             frontWheelCollider.brakeTorque = 0;
-            rearWheelCollider.motorTorque =  GetSimulatedTorqueFromSpeed( speedReceiver.speedKph);
+
+            // Apply torque based on movement and speed
+            rearWheelCollider.motorTorque = GetSimulatedTorqueFromSpeed(speedReceiver.speedKph);
 
             UpdateCenterOfMass();
         }
@@ -222,21 +227,42 @@ namespace KikiNgao.SimpleBikeControl
         [Header("Torque Simulation")]
         public AnimationCurve torqueCurve = AnimationCurve.Linear(0, 150f, 150f, 0f);
         public float wheelRadius = 0.35f; // meters
-        public float pedalInput;
+
         public float GetSimulatedTorqueFromSpeed(float speedKmh)
         {
-            // Convert to m/s
+            // Convert speed sensor reading to the torque needed to maintain that speed
+
+            // If no speed detected, no torque needed
+            if (speedKmh < 0.1f)
+            {
+                return 0f;
+            }
+
+            // Calculate the torque needed to overcome resistance at this speed
             float speedMps = speedKmh / 3.6f;
 
-            // Estimate wheel RPM
-            float wheelRPM = (speedMps / (2f * Mathf.PI * wheelRadius)) * 60f;
+            // Estimate resistance forces that need to be overcome:
+            // 1. Air resistance (increases with speed squared)
+            float airResistanceForce = airResistance * speedMps * speedMps;
 
-            // Simulate cadence = wheel RPM (assuming gear ratio = 1)
-            float virtualCadence = wheelRPM;
+            // 2. Rolling resistance (roughly constant)
+            float rollingResistance = m_Rigidbody.mass * 9.81f * 0.01f; // ~1% of weight
 
-            // Get torque from curve
-            float torque = torqueCurve.Evaluate(virtualCadence) * Mathf.Clamp01(pedalInput);
-            return torque;
+            // 3. Additional drag from Unity's physics
+            float unityDrag = m_Rigidbody.linearDamping * speedMps * m_Rigidbody.mass;
+
+            // Total force needed to maintain this speed
+            float totalResistanceForce = airResistanceForce + rollingResistance + unityDrag;
+
+            // Convert force to torque (Force = Torque / wheelRadius)
+            float requiredTorque = totalResistanceForce * wheelRadius;
+
+            // Add some extra torque for acceleration/maintaining momentum
+            float momentumTorque = speedKmh * legPower * 0.5f;
+
+            float finalTorque = requiredTorque + momentumTorque;
+
+            return Mathf.Clamp(finalTorque, 0f, maxTorque);
         }
     }
 }
