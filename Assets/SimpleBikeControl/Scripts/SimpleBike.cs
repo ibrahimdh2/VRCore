@@ -7,7 +7,6 @@ namespace KikiNgao.SimpleBikeControl
         [Tooltip("Control without biker")]
         public bool noBikerCtrl;
 
-        private InputManager inputManager;
         public Transform bikerHolder;
 
         public WheelCollider frontWheelCollider;
@@ -30,20 +29,18 @@ namespace KikiNgao.SimpleBikeControl
         [Tooltip("Rigidbody AngularDrag while standing")]
         [SerializeField] private float restAngularDrag = .2f;
         [Tooltip("ratio of wheels and crankset rotation ")]
-        // Ex:forceRatio = 2f; mean when crankset rotate 1 round the wheels rotate 2 round
         [SerializeField] private float forceRatio = 2f;
-        // default: speed [0 -> 50] Angle [1 -> 35]
         [SerializeField] private AnimationCurve frontWheelRestrictCurve = new AnimationCurve(new Keyframe(0f, 35f), new Keyframe(50f, 1f));
 
-        public Transform leftHandTarget, rightHandTarget;
-        public Transform leftPendalTarget, rightPendalTarget;
-        public Transform leftStandTarget, rightStandTarget;
 
         private Transform centerOfMass;
-
         private Rigidbody m_Rigidbody;
+
         public Rigidbody GetRigidbody() => m_Rigidbody;
 
+        // VR Controllers
+        public Transform leftController;
+        public Transform rightController;
 
         [HideInInspector]
         public bool falling;
@@ -51,18 +48,17 @@ namespace KikiNgao.SimpleBikeControl
         private float fallingAngurlarDrag = 0.01f;
 
         private float temporaryFrontWheelAngle;
-
         private float handlerBarYLastAngle;
         private float currentLegPower;
         private float reversePower;
         private EventManager eventManager;
 
-        public bool IsReverse() => inputManager.vertical < 0;
-        public bool IsMovingToward => inputManager.vertical > 0;
-        private bool IsRest() => inputManager.vertical == 0 && inputManager.horizontal == 0 || inputManager.vertical == 0 && inputManager.horizontal != 0;
+        public bool IsReverse() => false;
+        public bool IsMovingToward => speedReceiver.speedKph > 0;
+        private bool IsRest() => speedReceiver.speedKph == 0;
         public bool IsMoving() => true;
-        private bool IsTurning() => inputManager.horizontal != 0;
-        private bool IsSpeedUp() => inputManager.speedUp;
+        private bool IsTurning() => frontWheelCollider.steerAngle != 0;
+        private bool IsSpeedUp() => false;
 
         private float GetBikeSpeedKm() => GetBikeSpeedMs() * 3.6f;
         private float GetBikeSpeedMs() => m_Rigidbody.linearVelocity.magnitude;
@@ -72,6 +68,7 @@ namespace KikiNgao.SimpleBikeControl
 
         public bool Freeze { get => m_Rigidbody.isKinematic; set => m_Rigidbody.isKinematic = value; }
         public bool FreezeCrankset { get; set; }
+
         public bool ReadyToRide()
         {
             if (noBikerCtrl) return true;
@@ -82,8 +79,6 @@ namespace KikiNgao.SimpleBikeControl
 
         void Start()
         {
-            inputManager = GameManager.Instance.GetInputManager;
-            eventManager = GameManager.Instance.GetEventManager;
 
             CreateCenterOfMass();
             SettingRigidbody();
@@ -92,10 +87,8 @@ namespace KikiNgao.SimpleBikeControl
             reversePower = legPower * 3;
 
             Freeze = true;
-
         }
 
-        //creat cemter of mass and add to the bike
         private void CreateCenterOfMass()
         {
             centerOfMass = new GameObject().transform;
@@ -109,27 +102,29 @@ namespace KikiNgao.SimpleBikeControl
             centerOfMass.transform.position = center;
             centerOfMass.parent = transform;
         }
+
         private void SettingRigidbody()
         {
             m_Rigidbody = transform.GetComponent<Rigidbody>();
-            m_Rigidbody.centerOfMass = centerOfMass.transform.position;
+            m_Rigidbody.centerOfMass = centerOfMass.transform.localPosition;
         }
+
         float powerUp = 1f;
-        [SerializeField]private SpeedReceiver speedReceiver;
+        [SerializeField] private SpeedReceiver speedReceiver;
+        [SerializeField] private float turnSensitivity;
+        [SerializeField] private float rotationMultiplier;
+        [SerializeField] private int maxTurnAngle;
 
         private void FixedUpdate()
         {
-            // falling when exit bike 
-            if (falling) { Falling(); return; };
+            if (falling) { Falling(); return; }
+            ;
 
-            // <<< no control handle above
             if (!ReadyToRide()) return;
-            // under control handle under >>
 
-            // ready to ride and no key press
             if (IsRest()) Rest();
             if (IsMoving()) MovingBike();
-            if (IsTurning()) TurningBike();
+            if (IsTurning() || (leftController && rightController)) TurningBike();
 
             UpdateLegPower(IsSpeedUp());
             if (!FreezeCrankset) UpdateCranksetRotation();
@@ -143,16 +138,14 @@ namespace KikiNgao.SimpleBikeControl
                 powerUp += powerUpSpeed * Time.deltaTime;
                 if (powerUp >= powerUpMax) powerUp = powerUpMax;
                 currentLegPower = legPower * 10 * powerUp;
-
                 eventManager?.OnSpeedUp();
-
                 return;
-                //Debug.Log(powerUp);
             }
             eventManager?.OnNormalSpeed();
             powerUp = 1f;
             currentLegPower = legPower * 10 * powerUp;
         }
+
         private void MovingBike()
         {
             Freeze = false;
@@ -167,18 +160,25 @@ namespace KikiNgao.SimpleBikeControl
 
         private void TurningBike()
         {
-            // handlerBar is restricted while speed is high       
             temporaryFrontWheelAngle = frontWheelRestrictCurve.Evaluate(GetBikeSpeedKm());
 
-            //rotate handlerbar by local Y axis
-            float nextAngle = temporaryFrontWheelAngle * inputManager.horizontal;
+            float inputAngle = default;
+
+            // === VR Integration ===
+            if (leftController != null && rightController != null)
+            {
+                inputAngle = CalculateHandlebarAngle() / maxTurnAngle;
+                Debug.Log($"{inputAngle}");
+            }
+
+            float nextAngle = temporaryFrontWheelAngle * inputAngle;
             frontWheelCollider.steerAngle = nextAngle;
+
             Quaternion handlerBarLocalRotation = Quaternion.Euler(0, nextAngle - handlerBarYLastAngle, 0);
             handlerBar.rotation = Quaternion.Lerp(handlerBar.rotation, handlerBar.rotation * handlerBarLocalRotation, turningSmooth);
             handlerBarYLastAngle = nextAngle;
         }
 
-        // the bike keep moving slowly if we forgot reset motor force
         private void ResetWheelsCollider()
         {
             frontWheelCollider.steerAngle = 0f;
@@ -188,22 +188,17 @@ namespace KikiNgao.SimpleBikeControl
             frontWheelCollider.brakeTorque = 0;
         }
 
-        // when had biker and no key press
         private void Rest()
         {
-            // the bike auto stop due to high drag
             m_Rigidbody.linearDamping = restDrag;
             m_Rigidbody.angularDamping = restAngularDrag;
             ResetWheelsCollider();
             UpdateCenterOfMass();
-
-
         }
-        //When biker exit bike it's start falling 
+
         public void Falling()
         {
             falling = true;
-            // the bike auto stop due to high drag
             m_Rigidbody.linearDamping = fallingDrag;
             m_Rigidbody.angularDamping = fallingAngurlarDrag;
 
@@ -211,10 +206,10 @@ namespace KikiNgao.SimpleBikeControl
             UpdateWheelDisplay();
             ResetWheelsCollider();
 
-            //Debug.Log(gameObject.name + "  Falling ");
             float angle = GetBikeAngle();
             if (angle < -75 || angle > 75) { Freeze = true; falling = false; }
         }
+
         private void UpdateCranksetRotation()
         {
             cranksetTransform.rotation *= Quaternion.Euler(GetBikeSpeedKm() / forceRatio, 0, 0);
@@ -225,16 +220,15 @@ namespace KikiNgao.SimpleBikeControl
 
         private void UpdateWheelDisplay()
         {
-            Vector3 temporaryVector;
-            Quaternion temporaryQuaternion;
+            Vector3 pos;
+            Quaternion rot;
 
-            rearWheelCollider.GetWorldPose(out temporaryVector, out temporaryQuaternion);
-            rearWheel.transform.position = temporaryVector;
+            rearWheelCollider.GetWorldPose(out pos, out rot);
+            rearWheel.transform.position = pos;
 
             Quaternion rearWheelRot = rearWheel.transform.rotation;
-
             rearWheel.transform.rotation = IsReverse() ? rearWheelRot * Quaternion.Euler(-GetBikeSpeedKm(), 0, 0)
-                : rearWheelRot * Quaternion.Euler(GetBikeSpeedKm(), 0, 0);
+                                                        : rearWheelRot * Quaternion.Euler(GetBikeSpeedKm(), 0, 0);
 
             frontWheel.transform.localRotation = rearWheel.transform.localRotation;
         }
@@ -245,39 +239,55 @@ namespace KikiNgao.SimpleBikeControl
 
             if (!falling)
             {
-                if (IsRest())// when bike rest 
-                {
-                    centerLocal.y = 0;
-                    //centerLocal.x = TiltToRight() ? .01f : -0.1f;
-                }
-                else centerLocal.y = -0.8f; //set center local y under ground to make bike tilt while riding 
+                centerLocal.y = IsRest() ? 0 : -0.8f;
             }
-            else //falling
+            else
             {
                 centerLocal.y = 0;
-               // centerLocal.x = TiltToRight() ? .2f : -0.2f;
             }
 
-            // when bike falling
             m_Rigidbody.centerOfMass = centerLocal;
         }
 
         private bool OnGround(WheelCollider wheelCollider)
         {
-            if (Physics.Raycast(wheelCollider.transform.position, -transform.up, out RaycastHit hit, wheelCollider.radius + 0.1f))
-            {
-                return true;
-            }
-            return false;
+            return Physics.Raycast(wheelCollider.transform.position, -transform.up, out RaycastHit hit, wheelCollider.radius + 0.1f);
         }
-        // convert runtime Euler Angle to angle that showing in Unity Editor 
+
         private static float WrapAngle(float angle)
         {
             angle %= 360;
-            if (angle > 180)
-                return angle - 360;
+            return angle > 180 ? angle - 360 : angle;
+        }
 
-            return angle;
+        private float CalculateHandlebarAngle()
+        {
+            if (leftController == null || rightController == null)
+                return 0f;
+
+            // Get positions in world space
+            Vector3 leftPos = leftController.position;
+            Vector3 rightPos = rightController.position;
+
+            // Vector from left to right controller
+            Vector3 handlebarVector = rightPos - leftPos;
+
+            // Project onto bike's local XZ plane
+            Vector3 localHandlebarVector = transform.InverseTransformDirection(handlebarVector);
+            localHandlebarVector.y = 0;
+
+            if (localHandlebarVector.magnitude == 0) return 0f;
+
+            // Calculate angle in degrees: left-right vector relative to local X axis
+            float angle = Mathf.Atan2(localHandlebarVector.z, localHandlebarVector.x) * Mathf.Rad2Deg;
+
+            // Normalize: zero = perfectly horizontal handlebar
+            float handlebarTurnAngle = angle - 0f; // Straight = 0 degrees
+
+            // Clamp
+            handlebarTurnAngle = Mathf.Clamp(handlebarTurnAngle, -maxTurnAngle, maxTurnAngle);
+            Debug.Log($"handlebar turn {handlebarTurnAngle}");
+            return -handlebarTurnAngle;
         }
 
     }

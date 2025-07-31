@@ -2135,7 +2135,7 @@ MonoBehaviour:
   speedTimeout: 2
   decelerationRate: 5
   simulate: 1
-  simulateSpeed: 1
+  simulateSpeed: 500
 --- !u!1 &824614702
 GameObject:
   m_ObjectHideFlags: 0
@@ -5913,6 +5913,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4050312253554387883, guid: fabda0d6295e918429b88dad63cdbaf2, type: 3}
+      propertyPath: maxTurnAngle
+      value: 35
+      objectReference: {fileID: 0}
+    - target: {fileID: 4050312253554387883, guid: fabda0d6295e918429b88dad63cdbaf2, type: 3}
       propertyPath: speedReceiver
       value: 
       objectReference: {fileID: 813749555}
@@ -5924,6 +5928,14 @@ PrefabInstance:
       propertyPath: rightController
       value: 
       objectReference: {fileID: 1033888028}
+    - target: {fileID: 4050312253554387883, guid: fabda0d6295e918429b88dad63cdbaf2, type: 3}
+      propertyPath: turnSensitivity
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4050312253554387883, guid: fabda0d6295e918429b88dad63cdbaf2, type: 3}
+      propertyPath: rotationMultiplier
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

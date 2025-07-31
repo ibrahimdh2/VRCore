@@ -234,12 +234,7 @@ namespace KikiNgao.SimpleBikeControl
             rightStandingTarget.transform.localPosition = new Vector3(0.2f, 0.1f, -0.15f);
 
             //add IKTarget to SimpleBike
-            simpleBike.leftHandTarget = lefHandTarget.transform;
-            simpleBike.rightHandTarget = rightHandTarget.transform;
-            simpleBike.leftPendalTarget = leftPendalTarget.transform;
-            simpleBike.rightPendalTarget = rightPendalTarget.transform;
-            simpleBike.leftStandTarget = leftStandingTarget.transform;
-            simpleBike.rightStandTarget = rightStandingTarget.transform;
+  
 
             #endregion
             #endregion
