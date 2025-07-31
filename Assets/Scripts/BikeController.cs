@@ -205,29 +205,23 @@ public class BikeController : MonoBehaviour
 
     private void UpdateWheelVisuals()
     {
-        // Calculate wheel rotation based on movement
-        float wheelCircumference = 2 * Mathf.PI * (frontWheelCollider != null ? frontWheelCollider.radius : 0.33f); // Default radius if null
-        float distanceTraveled = rb.linearVelocity.magnitude * Time.deltaTime;
-        float wheelRotationDelta = (distanceTraveled / wheelCircumference) * 360f; // Convert to degrees
+        float speed = rb.linearVelocity.magnitude; // m/s
+        float wheelRadius = frontWheelCollider != null ? frontWheelCollider.radius : 0.33f;
+        float wheelCircumference = 2 * Mathf.PI * wheelRadius;
+        float wheelRpm = speed / wheelCircumference;
+        float wheelRotationSpeed = wheelRpm * 360f * Time.deltaTime;
 
-        // Update front wheel - ONLY spinning rotation, steering is handled by parent
         if (frontWheelTransform != null)
         {
-            frontWheelRotation += wheelRotationDelta;
-
-            // Apply only the spinning rotation to the wheel mesh
-            // The steering rotation is handled by frontHandleAssembly
-            frontWheelTransform.localRotation = Quaternion.Euler(frontWheelRotation, 0, 0);
+            frontWheelTransform.Rotate(-Vector3.forward, wheelRotationSpeed);
         }
 
-        // Update back wheel - spinning rotation only
         if (backWheelTransform != null)
         {
-            backWheelRotation += wheelRotationDelta;
-            backWheelTransform.localRotation = Quaternion.Euler(backWheelRotation, 0, 0);
+            backWheelTransform.Rotate(Vector3.forward, wheelRotationSpeed);
         }
 
-        // Update wheel positions based on wheel collider positions
+        // Optional: Update wheel positions if needed
         UpdateWheelPositions();
     }
 

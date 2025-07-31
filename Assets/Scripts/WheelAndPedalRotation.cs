@@ -27,7 +27,7 @@ public class WheelAndPedalRotation : MonoBehaviour
         pedalGear.Rotate(Vector3.right, pedalRotationSpeed);
         leftPedal.Rotate(-Vector3.right, pedalRotationSpeed);
         rightPedal.Rotate(Vector3.right, pedalRotationSpeed);
-        frontWheel.Rotate(Vector3.forward, wheelRotationSpeed);
-        backWheel.Rotate(Vector3.forward, wheelRotationSpeed);
+        //frontWheel.Rotate(Vector3.forward, wheelRotationSpeed);
+        //backWheel.Rotate(Vector3.forward, wheelRotationSpeed);
     }
 }
