@@ -27,7 +27,8 @@ namespace KikiNgao.SimpleBikeControl
         [SerializeField] private float restAngularDrag = .2f;
         [SerializeField] private float forceRatio = 2f;
         [SerializeField] private AnimationCurve frontWheelRestrictCurve = new AnimationCurve(new Keyframe(0f, 35f), new Keyframe(50f, 1f));
-
+        float maxTorque = 5000f;
+        float maxEffectiveSpeed = 60f; // km/h where torque starts to drop
         private Transform centerOfMass;
         private Rigidbody m_Rigidbody;
 
@@ -45,7 +46,7 @@ namespace KikiNgao.SimpleBikeControl
         public bool IsReverse() => false;
         public bool IsMovingToward => speedReceiver.speedKph > 0;
         private bool IsRest() => speedReceiver.speedKph == 0;
-        public bool IsMoving() => true;
+        public bool IsMoving() =>  speedReceiver.speedKph > 0.1f || m_Rigidbody.linearVelocity.sqrMagnitude > 0.01f;
         private bool IsTurning() => frontWheelCollider.steerAngle != 0;
         private bool IsSpeedUp() => false;
 
@@ -100,7 +101,6 @@ namespace KikiNgao.SimpleBikeControl
             if (IsMoving()) MovingBike();
             if (IsTurning() || (leftController && rightController)) TurningBike();
 
-            UpdateLegPower(IsSpeedUp());
             if (!FreezeCrankset) UpdateCranksetRotation();
             UpdateWheelDisplay();
 
@@ -110,17 +110,7 @@ namespace KikiNgao.SimpleBikeControl
 
         private void UpdateLegPower(bool speedUp)
         {
-            if (speedUp)
-            {
-                powerUp += powerUpSpeed * Time.deltaTime;
-                if (powerUp >= powerUpMax) powerUp = powerUpMax;
-                currentLegPower = legPower * 10 * powerUp;
-                eventManager?.OnSpeedUp();
-                return;
-            }
-            eventManager?.OnNormalSpeed();
-            powerUp = 1f;
-            currentLegPower = legPower * 10 * powerUp;
+           
         }
 
         private void MovingBike()
@@ -130,7 +120,7 @@ namespace KikiNgao.SimpleBikeControl
             m_Rigidbody.angularDamping = 5 + GetBikeSpeedMs() / (m_Rigidbody.mass / 10);
 
             frontWheelCollider.brakeTorque = 0;
-            rearWheelCollider.motorTorque = speedReceiver.speedKph;
+            rearWheelCollider.motorTorque =  GetSimulatedTorqueFromSpeed( speedReceiver.speedKph);
 
             UpdateCenterOfMass();
         }
@@ -227,6 +217,26 @@ namespace KikiNgao.SimpleBikeControl
             float angle = Mathf.Atan2(localHandlebarVector.z, localHandlebarVector.x) * Mathf.Rad2Deg;
             float handlebarTurnAngle = Mathf.Clamp(angle, -maxTurnAngle, maxTurnAngle);
             return -handlebarTurnAngle;
+        }
+
+        [Header("Torque Simulation")]
+        public AnimationCurve torqueCurve = AnimationCurve.Linear(0, 150f, 150f, 0f);
+        public float wheelRadius = 0.35f; // meters
+        public float pedalInput;
+        public float GetSimulatedTorqueFromSpeed(float speedKmh)
+        {
+            // Convert to m/s
+            float speedMps = speedKmh / 3.6f;
+
+            // Estimate wheel RPM
+            float wheelRPM = (speedMps / (2f * Mathf.PI * wheelRadius)) * 60f;
+
+            // Simulate cadence = wheel RPM (assuming gear ratio = 1)
+            float virtualCadence = wheelRPM;
+
+            // Get torque from curve
+            float torque = torqueCurve.Evaluate(virtualCadence) * Mathf.Clamp01(pedalInput);
+            return torque;
         }
     }
 }
