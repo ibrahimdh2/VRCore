@@ -7,13 +7,13 @@ public class BikeController : MonoBehaviour
     [Header("Handlebar Controllers")]
     public Transform leftController;
     public Transform rightController;
-    public Transform frontWheelTransform; // The actual wheel mesh that spins
-    public Transform frontHandleAssembly; // Parent object that steers left/right
+    public Transform frontWheelTransform;
+    public Transform frontHandleAssembly;
     public Vector3 handleBarRotationOffset;
-    [Header("Steering Clamp")]
-    public float minSteerClamp = -30f;
-    public float maxSteerClamp = 30f;
 
+    [Header("Steering Clamp")]
+    public float minSteerClamp = -25f; // Reduced from -30
+    public float maxSteerClamp = 25f;  // Reduced from 30
 
     public enum TurnAngle { X, Y, Z }
     public TurnAngle currentturnAngle;
@@ -27,30 +27,30 @@ public class BikeController : MonoBehaviour
     private float moveSpeed;
 
     [Header("Handlebar Settings")]
-    public float maxTurnAngle = 45f; // Maximum turn angle in degrees
-    public float turnSensitivity = 1f; // Sensitivity multiplier for turning
-    public float rotationMultiplier = 10f; // How much the rotation is affected
+    public float maxTurnAngle = 15f; // Much smaller for high speeds
+    public float turnSensitivity = 0.3f; // Very low sensitivity for precision
+    public float rotationMultiplier = 3f; // Much reduced for high-speed control
 
     [Header("Wheel Colliders")]
     public WheelCollider frontWheelCollider;
     public WheelCollider backWheelCollider;
 
     [Header("Wheel Physics")]
-    public float motorForce = 1500f;
-    public float brakeForce = 3000f;
-    public float maxSteerAngle = 30f;
+    public float motorForce = 4000f; // Increased for high speeds
+    public float brakeForce = 8000f; // Much stronger brakes needed
+    public float maxSteerAngle = 12f; // Very small for stability at high speeds
 
     [Header("Physics Settings")]
     public bool useStabilityAssist = true;
-    public float stabilityForce = 50f;
-    public float gyroscopicForce = 10f;
+    public float stabilityForce = 200f; // Much stronger for high speeds
+    public float gyroscopicForce = 100f; // Strong gyroscopic effect needed
+    public float uprightTorque = 300f; // Stronger upright force
+    public float minSpeedForStability = 3f; // Increased to 3 km/h to avoid low-speed interference
+    public float highSpeedStabilityBoost = 2f; // Additional stability at high speeds
+    public float lowSpeedSteerBoost = 3f; // Extra steering power at low speeds
 
     // For wheel visual updates
     public Transform backWheelTransform;
-
-    // Wheel rotation tracking
-    private float frontWheelRotation = 0f;
-    private float backWheelRotation = 0f;
 
     private Rigidbody rb;
 
@@ -62,74 +62,164 @@ public class BikeController : MonoBehaviour
             rb = gameObject.AddComponent<Rigidbody>();
         }
 
-        // Set rigidbody properties for realistic bike physics
-        rb.mass = 180f; // Typical bike + rider weight
-        rb.centerOfMass = new Vector3(0, -0.5f, 0); // Lower center of mass for stability
+        // Improved rigidbody properties for high-speed motorcycle physics
+        rb.mass = 250f; // Heavier for high-speed stability
+        rb.centerOfMass = new Vector3(0, -0.4f, 0.2f); // Lower and more forward
+        rb.linearDamping = 0.02f; // Lower air resistance for high speeds
+        rb.angularDamping = 8f; // Higher angular drag for stability
+
+        // Configure wheel colliders with better friction
+        ConfigureWheelFriction();
+    }
+
+    void ConfigureWheelFriction()
+    {
+        // High-speed optimized friction settings
+        WheelFrictionCurve forwardFriction = new WheelFrictionCurve();
+        forwardFriction.extremumSlip = 0.2f; // Lower slip for high-speed grip
+        forwardFriction.extremumValue = 1.5f; // Higher grip
+        forwardFriction.asymptoteSlip = 0.6f;
+        forwardFriction.asymptoteValue = 1.0f;
+        forwardFriction.stiffness = 3f; // Higher stiffness for stability
+
+        WheelFrictionCurve sidewaysFriction = new WheelFrictionCurve();
+        sidewaysFriction.extremumSlip = 0.15f; // Very low slip for cornering grip
+        sidewaysFriction.extremumValue = 2.0f; // High lateral grip
+        sidewaysFriction.asymptoteSlip = 0.4f;
+        sidewaysFriction.asymptoteValue = 1.2f;
+        sidewaysFriction.stiffness = 4f; // Very high for high-speed cornering
+
+        if (frontWheelCollider != null)
+        {
+            frontWheelCollider.forwardFriction = forwardFriction;
+            frontWheelCollider.sidewaysFriction = sidewaysFriction;
+        }
+
+        if (backWheelCollider != null)
+        {
+            backWheelCollider.forwardFriction = forwardFriction;
+            backWheelCollider.sidewaysFriction = sidewaysFriction;
+        }
     }
 
     void Update()
     {
-        // Get speed from receiver (assuming this gives you desired speed)
         moveSpeed = receiver.speedKph;
         speedText.text = $"{moveSpeed:F2} km/h";
 
-        // Calculate handlebar turn angle
         float turnAngle = CalculateHandlebarAngle();
-
-        // Apply steering to front wheel collider
         ApplySteering(turnAngle);
-
-        // Update visual wheel rotations
         UpdateWheelVisuals();
-
-        // Apply motor force based on desired speed
         ApplyMotorForce();
     }
 
     void FixedUpdate()
     {
-        // All physics-based movement is handled by wheel colliders automatically
-        // The wheel colliders will move the rigidbody based on:
-        // - Motor torque applied to wheels
-        // - Steering angle of front wheel
-        // - Friction settings of wheel colliders
-        // - Ground contact and physics interactions
-
-        // Optional: Add some stability assistance for bikes
         AddBikeStability();
+        AddUprightForce();
+        LimitExtremeMovements();
     }
 
     private void AddBikeStability()
     {
         if (!useStabilityAssist || rb == null) return;
 
-        // Add some upright force to prevent the bike from falling over easily
-        // This simulates a rider's balance adjustments
+        float currentSpeed = rb.linearVelocity.magnitude;
+        float speedKmh = currentSpeed * 3.6f;
+
         Vector3 up = transform.up;
         Vector3 worldUp = Vector3.up;
-
-        // Calculate how much the bike is tilted
         float tiltAngle = Vector3.Angle(up, worldUp);
 
-        // Apply corrective torque if tilted too much
-        if (tiltAngle > 5f && rb.linearVelocity.magnitude > 1f) // Only when moving
+        // Disable most stability assists at very low speeds to allow natural movement
+        if (speedKmh < minSpeedForStability)
         {
-            Vector3 correctionTorque = Vector3.Cross(up, worldUp) * tiltAngle * stabilityForce;
+            // Only apply minimal upright force at very low speeds
+            if (speedKmh > 0.5f) // Only above 0.5 km/h
+            {
+                if (tiltAngle > 45f) // Only when severely tilted
+                {
+                    Vector3 correctionTorque = Vector3.Cross(up, worldUp) * tiltAngle * stabilityForce * 0.1f;
+                    rb.AddTorque(correctionTorque, ForceMode.Acceleration);
+                }
+            }
+            return;
+        }
+
+        // Speed-based stability multiplier - more stable at higher speeds
+        float speedStabilityMultiplier = 1f;
+
+        if (speedKmh > 50f) // Above 50 km/h, increase stability significantly
+        {
+            speedStabilityMultiplier = 1f + (speedKmh / 100f) * highSpeedStabilityBoost;
+        }
+        else if (speedKmh < 15f) // Reduce stability at low-medium speeds
+        {
+            speedStabilityMultiplier = Mathf.Lerp(0.3f, 1f, (speedKmh - minSpeedForStability) / 12f);
+        }
+
+        // Apply corrective torque when tilted
+        if (tiltAngle > 2f)
+        {
+            Vector3 correctionTorque = Vector3.Cross(up, worldUp) * tiltAngle * stabilityForce * speedStabilityMultiplier;
             rb.AddTorque(correctionTorque, ForceMode.Acceleration);
         }
 
-        // Add gyroscopic effect - bikes are more stable when moving faster
-        if (rb.linearVelocity.magnitude > 0.5f)
+        // Enhanced gyroscopic effect - but only at reasonable speeds
+        if (speedKmh > 8f) // Only apply gyroscopic effects above 8 km/h
         {
-            float gyroEffect = Mathf.Clamp(rb.linearVelocity.magnitude * gyroscopicForce, 0f, 100f);
-            Vector3 gyroTorque = transform.up * frontWheelCollider.steerAngle * -gyroEffect * 0.1f;
+            float speedFactor = Mathf.Clamp01(currentSpeed / 30f); // Normalize to 30 m/s (~108 km/h)
+            float gyroEffect = speedFactor * gyroscopicForce * speedStabilityMultiplier;
+            Vector3 gyroTorque = transform.up * frontWheelCollider.steerAngle * -gyroEffect * 0.01f;
             rb.AddTorque(gyroTorque, ForceMode.Acceleration);
+
+            // Counter-steering effect at high speeds
+            if (speedKmh > 80f && Mathf.Abs(frontWheelCollider.steerAngle) > 2f)
+            {
+                Vector3 counterSteerTorque = -transform.up * frontWheelCollider.steerAngle * gyroEffect * 0.005f;
+                rb.AddTorque(counterSteerTorque, ForceMode.Acceleration);
+            }
+        }
+    }
+
+    private void AddUprightForce()
+    {
+        if (rb == null) return;
+
+        float speedKmh = rb.linearVelocity.magnitude * 3.6f;
+
+        // Greatly reduce upright force at very low speeds
+        if (speedKmh < 2f) return; // No upright force below 2 km/h
+
+        Vector3 up = transform.up;
+        Vector3 worldUp = Vector3.up;
+
+        float uprightDot = Vector3.Dot(up, worldUp);
+        if (uprightDot < 0.8f) // If bike is tilted more than ~36 degrees
+        {
+            // Scale upright force with speed - less force at low speeds
+            float speedScale = speedKmh < 10f ? Mathf.Lerp(0.1f, 1f, (speedKmh - 2f) / 8f) : 1f;
+
+            Vector3 uprightDirection = Vector3.Cross(Vector3.Cross(worldUp, up), worldUp).normalized;
+            rb.AddTorque(uprightDirection * uprightTorque * speedScale, ForceMode.Acceleration);
+        }
+    }
+
+    private void LimitExtremeMovements()
+    {
+        if (rb == null) return;
+
+        // Prevent excessive angular velocity (especially important at high speeds)
+        if (rb.angularVelocity.magnitude > 5f) // Reduced for high-speed stability
+        {
+            rb.angularVelocity = rb.angularVelocity.normalized * 5f;
         }
 
-        // Prevent extreme rotation speeds that could cause flipping
-        if (rb.angularVelocity.magnitude > 10f)
+        // Allow higher linear velocity for high-speed capability
+        float maxLinearVelocity = 280f / 3.6f; // Convert 280 km/h to m/s (~77.8 m/s)
+        if (rb.linearVelocity.magnitude > maxLinearVelocity)
         {
-            rb.angularVelocity = rb.angularVelocity.normalized * 10f;
+            rb.linearVelocity = rb.linearVelocity.normalized * maxLinearVelocity;
         }
     }
 
@@ -137,8 +227,27 @@ public class BikeController : MonoBehaviour
     {
         if (frontWheelCollider != null)
         {
-            // Clamp the steering angle using inspector-defined min/max
-            float steerAngle = Mathf.Clamp(turnAngle, minSteerClamp, maxSteerClamp);
+            // Speed-sensitive steering with special handling for low speeds
+            float currentSpeed = rb.linearVelocity.magnitude * 3.6f; // km/h
+            float speedFactor = 1f;
+
+            if (currentSpeed < 5f) // Low speed range (0-5 km/h)
+            {
+                // Boost steering at very low speeds for maneuverability
+                speedFactor = lowSpeedSteerBoost;
+            }
+            else if (currentSpeed > 25f) // Above average speed, reduce steering
+            {
+                speedFactor = Mathf.Lerp(1f, 0.1f, (currentSpeed - 25f) / 255f); // Scale from 25 to 280 km/h
+            }
+
+            // At very high speeds (200+ km/h), steering becomes extremely limited
+            if (currentSpeed > 200f)
+            {
+                speedFactor *= 0.3f; // Additional reduction for extreme speeds
+            }
+
+            float steerAngle = Mathf.Clamp(turnAngle * speedFactor, minSteerClamp, maxSteerClamp);
             frontWheelCollider.steerAngle = steerAngle;
         }
 
@@ -165,22 +274,26 @@ public class BikeController : MonoBehaviour
     {
         if (backWheelCollider != null)
         {
-            // Get current speed in km/h
-            float currentSpeed = rb.linearVelocity.magnitude * 3.6f; // Convert m/s to km/h
+            float currentSpeed = rb.linearVelocity.magnitude * 3.6f;
             float speedDifference = moveSpeed - currentSpeed;
 
-            // Apply motor torque to both wheels for better traction and movement
-            if (moveSpeed > 0.1f) // Only apply motor force if we want to move
+            if (moveSpeed > 0.1f)
             {
-                float torque = speedDifference * motorForce * 0.1f;
+                // Adjust motor force application based on speed range
+                float motorMultiplier = 0.2f;
+
+                // More aggressive acceleration at low speeds
+                if (currentSpeed < 10f)
+                {
+                    motorMultiplier = 0.4f; // Double the motor force for low speeds
+                }
+
+                float torque = speedDifference * motorForce * motorMultiplier;
                 torque = Mathf.Clamp(torque, -motorForce, motorForce);
 
-                // Apply motor torque to back wheel (primary drive)
+                // Rear-wheel drive for motorcycles
                 backWheelCollider.motorTorque = torque;
-
-                // Optional: slight motor assistance to front wheel for better hill climbing
-                // Comment out if you want rear-wheel drive only
-                frontWheelCollider.motorTorque = torque * 0.1f;
+                frontWheelCollider.motorTorque = 0f; // No front motor assistance
             }
             else
             {
@@ -188,12 +301,14 @@ public class BikeController : MonoBehaviour
                 frontWheelCollider.motorTorque = 0f;
             }
 
-            // Apply braking when target speed is much lower or when stopping
-            if (moveSpeed < 0.1f || speedDifference < -2f)
+            // High-performance braking system
+            if (moveSpeed < 0.1f || speedDifference < -5f)
             {
-                float brakeAmount = moveSpeed < 0.1f ? brakeForce : brakeForce * 0.3f;
-                backWheelCollider.brakeTorque = brakeAmount;
-                frontWheelCollider.brakeTorque = brakeAmount * 0.7f;
+                float brakeAmount = moveSpeed < 0.1f ? brakeForce : brakeForce * 0.6f;
+
+                // Distribute braking: more on front for stability
+                backWheelCollider.brakeTorque = brakeAmount * 0.4f;
+                frontWheelCollider.brakeTorque = brakeAmount * 0.6f;
             }
             else
             {
@@ -205,8 +320,8 @@ public class BikeController : MonoBehaviour
 
     private void UpdateWheelVisuals()
     {
-        float speed = rb.linearVelocity.magnitude; // m/s
-        float wheelRadius = frontWheelCollider != null ? frontWheelCollider.radius : 0.33f;
+        float speed = rb.linearVelocity.magnitude;
+        float wheelRadius = frontWheelCollider != null ? frontWheelCollider.radius : 0.36f;
         float wheelCircumference = 2 * Mathf.PI * wheelRadius;
         float wheelRpm = speed / wheelCircumference;
         float wheelRotationSpeed = wheelRpm * 360f * Time.deltaTime;
@@ -221,23 +336,11 @@ public class BikeController : MonoBehaviour
             backWheelTransform.Rotate(Vector3.forward, wheelRotationSpeed);
         }
 
-        // Optional: Update wheel positions if needed
         UpdateWheelPositions();
     }
 
     private void UpdateWheelPositions()
     {
-        // Update front wheel assembly position
-        if (frontWheelCollider != null && frontHandleAssembly != null)
-        {
-            Vector3 pos;
-            Quaternion rot;
-            frontWheelCollider.GetWorldPose(out pos, out rot);
-
-            // Position the entire front assembly based on wheel collider
-        }
-
-        // Update back wheel position
         if (backWheelCollider != null && backWheelTransform != null)
         {
             Vector3 pos;
@@ -252,19 +355,12 @@ public class BikeController : MonoBehaviour
         if (leftController == null || rightController == null)
             return 0f;
 
-        // Convert controller positions to bike's local space
         Vector3 leftLocalPos = transform.InverseTransformPoint(leftController.position);
         Vector3 rightLocalPos = transform.InverseTransformPoint(rightController.position);
 
-        // Calculate the forward/backward difference (Z-axis in local space)
         float forwardBackwardDiff = leftLocalPos.z - rightLocalPos.z;
-
-        // Convert the difference to an angle
         float turnAngle = forwardBackwardDiff * turnSensitivity * rotationMultiplier;
 
-        // Clamp the turn angle to prevent extreme turns
-        turnAngle = Mathf.Clamp(turnAngle, -maxTurnAngle, maxTurnAngle);
-
-        return turnAngle;
+        return Mathf.Clamp(turnAngle, -maxTurnAngle, maxTurnAngle);
     }
 }
