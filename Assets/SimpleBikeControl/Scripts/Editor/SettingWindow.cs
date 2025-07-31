@@ -304,7 +304,7 @@ namespace KikiNgao.SimpleBikeControl
             footCollider_L.center = new Vector3(0, -footCollider_L.size.y / 2, 0);
             footCollider_R.center = new Vector3(0, -footCollider_R.size.y / 2, 0);
 
-            biker.AddComponent<Biker>();
+          //  biker.AddComponent<Biker>();
 
             // Animator 
             Animator bikerAnim = biker.GetComponent<Animator>();

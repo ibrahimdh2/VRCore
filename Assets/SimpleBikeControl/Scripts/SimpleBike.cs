@@ -60,7 +60,7 @@ namespace KikiNgao.SimpleBikeControl
         public bool IsReverse() => inputManager.vertical < 0;
         public bool IsMovingToward => inputManager.vertical > 0;
         private bool IsRest() => inputManager.vertical == 0 && inputManager.horizontal == 0 || inputManager.vertical == 0 && inputManager.horizontal != 0;
-        public bool IsMoving() => inputManager.vertical != 0;
+        public bool IsMoving() => true;
         private bool IsTurning() => inputManager.horizontal != 0;
         private bool IsSpeedUp() => inputManager.speedUp;
 
@@ -115,6 +115,8 @@ namespace KikiNgao.SimpleBikeControl
             m_Rigidbody.centerOfMass = centerOfMass.transform.position;
         }
         float powerUp = 1f;
+        [SerializeField]private SpeedReceiver speedReceiver;
+
         private void FixedUpdate()
         {
             // falling when exit bike 
@@ -158,7 +160,7 @@ namespace KikiNgao.SimpleBikeControl
             m_Rigidbody.angularDamping = 5 + GetBikeSpeedMs() / (m_Rigidbody.mass / 10);
 
             frontWheelCollider.brakeTorque = 0;
-            rearWheelCollider.motorTorque = !IsReverse() ? currentLegPower * inputManager.vertical : reversePower * inputManager.vertical;
+            rearWheelCollider.motorTorque = speedReceiver.speedKph;
 
             UpdateCenterOfMass();
         }
@@ -246,14 +248,14 @@ namespace KikiNgao.SimpleBikeControl
                 if (IsRest())// when bike rest 
                 {
                     centerLocal.y = 0;
-                    centerLocal.x = TiltToRight() ? .01f : -0.1f;
+                    //centerLocal.x = TiltToRight() ? .01f : -0.1f;
                 }
                 else centerLocal.y = -0.8f; //set center local y under ground to make bike tilt while riding 
             }
             else //falling
             {
                 centerLocal.y = 0;
-                centerLocal.x = TiltToRight() ? .2f : -0.2f;
+               // centerLocal.x = TiltToRight() ? .2f : -0.2f;
             }
 
             // when bike falling
