@@ -1733,11 +1733,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 216285183}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!4 &217974630 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7040132304579300765, guid: 8a3d78cbdf27ce54caa79544bcd99501, type: 3}
-  m_PrefabInstance: {fileID: 45396318654740627}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &224225014
 GameObject:
   m_ObjectHideFlags: 0
@@ -5647,6 +5642,38 @@ MonoBehaviour:
   m_ClampToMaxDistance: 0
   m_MaxDistance: 50
   m_PokeFilter: {fileID: 0}
+--- !u!1 &592501226
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 592501227}
+  m_Layer: 0
+  m_Name: Front Assembly
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &592501227
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 592501226}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.116628125, y: -0.6974223, z: 0.11662815, w: 0.6974224}
+  m_LocalPosition: {x: 0.00057104044, y: 0.97780526, z: 0.17009862}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 249231209414959733}
+  m_Father: {fileID: 7417029098109710074}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &593280879
 GameObject:
   m_ObjectHideFlags: 0
@@ -8156,17 +8183,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 776958920}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &787142270 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2571233436611572515, guid: 8a3d78cbdf27ce54caa79544bcd99501, type: 3}
-  m_PrefabInstance: {fileID: 45396318654740627}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb7c3395ed1669140b3686cfc8462be6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &787382717
 GameObject:
   m_ObjectHideFlags: 0
@@ -10515,13 +10531,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1032389727}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0.0000000074505797, y: 0.69750756, z: 0.000000035623085, w: 0.7165775}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.23102003, y: 0.23101999, z: 0.23102}
+  m_LocalScale: {x: 0.23102002, y: 0.23101999, z: 0.23101999}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 217974630}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 3211784706806043062}
+  m_LocalEulerAnglesHint: {x: 0, y: 88.455, z: 0}
 --- !u!23 &1032389729
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -12627,12 +12643,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1311076086}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.000000029802322, y: -0.0069322577, z: -6.69455e-17, w: 0.99997604}
-  m_LocalPosition: {x: 0.00057694316, y: 0.38015032, z: 0.4370787}
+  m_LocalRotation: {x: 0.11581684, y: 0.6925708, z: -0.117433846, w: 0.7022403}
+  m_LocalPosition: {x: 0.058003377, y: -0.6520011, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7417029098109710074}
+  m_Father: {fileID: 249231209414959733}
   m_LocalEulerAnglesHint: {x: 18.985, y: 89.16, z: -0.273}
 --- !u!146 &1311076088
 WheelCollider:
@@ -15446,7 +15462,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   xrRig: {fileID: 1717954561051109423}
   bikeChild: {fileID: 1032389728}
-  receiver: {fileID: 787142270}
+  receiver: {fileID: 8549442285745427863}
   action:
     m_Name: Action
     m_Type: 0
@@ -20830,10 +20846,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 7040132304579300765, guid: 8a3d78cbdf27ce54caa79544bcd99501, type: 3}
-      insertIndex: 0
-      addedObject: {fileID: 1032389728}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8a3d78cbdf27ce54caa79544bcd99501, type: 3}
 --- !u!33 &45721961378473883
@@ -21584,14 +21597,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 318724100508113683}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.11662813, y: -0.6974223, z: 0.11662815, w: 0.6974224}
-  m_LocalPosition: {x: 0.0005793182, y: 0.97780526, z: 0.17009535}
-  m_LocalScale: {x: 0.9999999, y: 0.9999999, z: 1}
+  m_LocalRotation: {x: 0, y: -0.6976279, z: 0, w: 0.71646035}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1311076087}
   - {fileID: 6364919688070452420}
-  m_Father: {fileID: 7417029098109710074}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 592501227}
+  m_LocalEulerAnglesHint: {x: 0, y: -88.474, z: 0}
 --- !u!4 &250034595285463038
 Transform:
   m_ObjectHideFlags: 0
@@ -36318,6 +36332,7 @@ Transform:
   - {fileID: 8889893168030850169}
   - {fileID: 980681733}
   - {fileID: 5285527788973720642}
+  - {fileID: 1032389728}
   m_Father: {fileID: 7417029098109710074}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3216734318504488490
@@ -56647,8 +56662,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1311076087}
-  - {fileID: 249231209414959733}
+  - {fileID: 592501227}
   - {fileID: 3211784706806043062}
   - {fileID: 942994077}
   m_Father: {fileID: 0}
@@ -62001,15 +62015,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   noBikerCtrl: 1
-  handlebarAssembly: {fileID: 249231209414959733}
-  handlebarPosOffset: {x: 0, y: 0, z: 0}
-  handlebarRotOffsetEuler: {x: 0, y: 0, z: 0}
+  handlebarAssembly: {fileID: 592501227}
   bikerHolder: {fileID: 1440544827}
   frontWheelCollider: {fileID: 1311076088}
   rearWheelCollider: {fileID: 980681734}
   frontWheel: {fileID: 1311076086}
   rearWheel: {fileID: 980681732}
-  handlerBar: {fileID: 249231209414959733}
+  handlerBar: {fileID: 592501227}
   cranksetTransform: {fileID: 1492037504}
   legPower: 10
   powerUpMax: 2
