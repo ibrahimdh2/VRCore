@@ -6,6 +6,7 @@ namespace KikiNgao.SimpleBikeControl
     {
         [Tooltip("Control without biker")]
         public bool noBikerCtrl;
+        public Transform handlebarAssembly;
 
         public Transform bikerHolder;
 
@@ -102,6 +103,9 @@ namespace KikiNgao.SimpleBikeControl
             UpdateLegPower(IsSpeedUp());
             if (!FreezeCrankset) UpdateCranksetRotation();
             UpdateWheelDisplay();
+
+            // Prevent bicycle tilt (lock Z-axis rotation)
+            transform.rotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y, 0f);
         }
 
         private void UpdateLegPower(bool speedUp)
@@ -144,9 +148,17 @@ namespace KikiNgao.SimpleBikeControl
             float nextAngle = temporaryFrontWheelAngle * inputAngle;
             frontWheelCollider.steerAngle = nextAngle;
 
+            // Visually rotate handlerBar (grips)
             Quaternion handlerBarLocalRotation = Quaternion.Euler(0, nextAngle - handlerBarYLastAngle, 0);
             handlerBar.rotation = Quaternion.Lerp(handlerBar.rotation, handlerBar.rotation * handlerBarLocalRotation, turningSmooth);
             handlerBarYLastAngle = nextAngle;
+
+            // Visually rotate the handlebar assembly (optional visual fork turning)
+            if (handlebarAssembly != null)
+            {
+                Quaternion targetRotation = Quaternion.Euler(0, nextAngle, 0);
+                handlebarAssembly.localRotation = Quaternion.Lerp(handlebarAssembly.localRotation, targetRotation, turningSmooth);
+            }
         }
 
         private void Rest()

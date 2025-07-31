@@ -3952,6 +3952,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1158709984}
   m_CullTransparentMesh: 0
+--- !u!4 &1167988814 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4430351311803455055, guid: fabda0d6295e918429b88dad63cdbaf2, type: 3}
+  m_PrefabInstance: {fileID: 9155854503940586365}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1237423504
 GameObject:
   m_ObjectHideFlags: 0
@@ -7616,6 +7621,10 @@ PrefabInstance:
       propertyPath: turnSensitivity
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4050312253554387883, guid: fabda0d6295e918429b88dad63cdbaf2, type: 3}
+      propertyPath: handlebarAssembly
+      value: 
+      objectReference: {fileID: 1167988814}
     - target: {fileID: 4050312253554387883, guid: fabda0d6295e918429b88dad63cdbaf2, type: 3}
       propertyPath: rotationMultiplier
       value: 1
