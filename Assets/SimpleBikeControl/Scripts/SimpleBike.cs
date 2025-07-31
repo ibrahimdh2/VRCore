@@ -230,7 +230,8 @@ namespace KikiNgao.SimpleBikeControl
 
         public float GetSimulatedTorqueFromSpeed(float speedKmh)
         {
-            // Convert speed sensor reading to the torque needed to maintain that speed
+            // Simple speed-to-torque conversion for WheelCollider
+            // Just need to provide torque proportional to desired speed
 
             // If no speed detected, no torque needed
             if (speedKmh < 0.1f)
@@ -238,31 +239,11 @@ namespace KikiNgao.SimpleBikeControl
                 return 0f;
             }
 
-            // Calculate the torque needed to overcome resistance at this speed
-            float speedMps = speedKmh / 3.6f;
+            // Simple linear relationship: more speed = more torque
+            // This maintains the speed without complex physics calculations
+            float baseTorque = speedKmh * legPower * 2f;
 
-            // Estimate resistance forces that need to be overcome:
-            // 1. Air resistance (increases with speed squared)
-            float airResistanceForce = airResistance * speedMps * speedMps;
-
-            // 2. Rolling resistance (roughly constant)
-            float rollingResistance = m_Rigidbody.mass * 9.81f * 0.01f; // ~1% of weight
-
-            // 3. Additional drag from Unity's physics
-            float unityDrag = m_Rigidbody.linearDamping * speedMps * m_Rigidbody.mass;
-
-            // Total force needed to maintain this speed
-            float totalResistanceForce = airResistanceForce + rollingResistance + unityDrag;
-
-            // Convert force to torque (Force = Torque / wheelRadius)
-            float requiredTorque = totalResistanceForce * wheelRadius;
-
-            // Add some extra torque for acceleration/maintaining momentum
-            float momentumTorque = speedKmh * legPower * 0.5f;
-
-            float finalTorque = requiredTorque + momentumTorque;
-
-            return Mathf.Clamp(finalTorque, 0f, maxTorque);
+            return Mathf.Clamp(baseTorque, 0f, maxTorque);
         }
     }
 }
