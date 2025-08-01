@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using TMPro;
 using UnityEngine;
 
 namespace KikiNgao.SimpleBikeControl
@@ -47,6 +48,8 @@ namespace KikiNgao.SimpleBikeControl
         public bool FreezeCrankset { get; set; }
 
         [SerializeField] private SpeedReceiver speedReceiver;
+        [SerializeField] private TextMeshProUGUI sensorSpeedUI;
+        [SerializeField] private TextMeshProUGUI currentSpeedUI;
         [SerializeField] private float turnSensitivity;
         [SerializeField] private float rotationMultiplier;
         [SerializeField] private int maxTurnAngle;
@@ -112,7 +115,14 @@ namespace KikiNgao.SimpleBikeControl
 
             calculatedTorque = CalculateTorqueFromSpeed(smoothedSpeed);
 
-            Debug.Log($"[Speed Sensor: {speedReceiver.speedKph:F1} KPH] | [Unity Speed: {m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH] | [Torque: {calculatedTorque:F1}]");
+            //Debug.Log($"[Speed Sensor: {speedReceiver.speedKph:F1} KPH] | [Unity Speed: {m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH] | [Torque: {calculatedTorque:F1}]");
+
+            if (sensorSpeedUI != null)
+            {
+                sensorSpeedUI.text = $"{speedReceiver.speedKph:F1} KPH";
+                currentSpeedUI.text = $"{m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH"; 
+            }
+
 
             if (IsRest()) Rest();
             else if (IsMoving()) MovingBike();
