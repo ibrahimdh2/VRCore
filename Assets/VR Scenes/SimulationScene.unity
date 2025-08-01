@@ -12315,6 +12315,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7986684313673828701, guid: 060d01e5c32f0c5428c63d26adebdc11, type: 3}
+      propertyPath: m_PositionInput.m_Reference
+      value: 
+      objectReference: {fileID: 7862207684358717888, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+    - target: {fileID: 7986684313673828701, guid: 060d01e5c32f0c5428c63d26adebdc11, type: 3}
+      propertyPath: m_RotationInput.m_Reference
+      value: 
+      objectReference: {fileID: -530380113134220495, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+    - target: {fileID: 7986684313673828701, guid: 060d01e5c32f0c5428c63d26adebdc11, type: 3}
+      propertyPath: m_TrackingStateInput.m_Reference
+      value: 
+      objectReference: {fileID: 1031966339891076899, guid: c348712bda248c246b8c49b3db54643f, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -13486,7 +13498,7 @@ Transform:
   m_GameObject: {fileID: 1032389727}
   serializedVersion: 2
   m_LocalRotation: {x: -0.0000000074505797, y: 0.69750756, z: 0.000000035623085, w: 0.7165775}
-  m_LocalPosition: {x: -0, y: -0.22, z: 0}
+  m_LocalPosition: {x: -0, y: 0.329, z: 0}
   m_LocalScale: {x: 0.23102002, y: 0.23101999, z: 0.23101999}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -20174,7 +20186,11 @@ MonoBehaviour:
   rigTransform:
   - {fileID: 2252173579951737311}
   - {fileID: 1032389728}
-  activeIndex: 0
+  activeIndex: 1
+  positionInput: {fileID: 7862207684358717888, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  rotationInput: {fileID: -530380113134220495, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  trackingStateInput: {fileID: 1031966339891076899, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  timeScale: 1
 --- !u!1 &1659581576
 GameObject:
   m_ObjectHideFlags: 0
@@ -40954,7 +40970,7 @@ Transform:
   m_GameObject: {fileID: 6499554625555225534}
   serializedVersion: 2
   m_LocalRotation: {x: -0.00000002366472, y: 0.00003996491, z: 0.00000001859364, w: -1}
-  m_LocalPosition: {x: -0.081, y: 0.924, z: -0.412}
+  m_LocalPosition: {x: -0.081, y: 1.19, z: -0.412}
   m_LocalScale: {x: 0.23102, y: 0.23102, z: 0.23102}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -75207,7 +75223,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7907113687064231996
 Transform:
   m_ObjectHideFlags: 0
@@ -79441,8 +79457,8 @@ MonoBehaviour:
   bikerHolder: {fileID: 5443391142736596463}
   frontWheelCollider: {fileID: 1311076088}
   rearWheelCollider: {fileID: 980681734}
-  frontWheel: {fileID: 1311076086}
-  rearWheel: {fileID: 980681732}
+  frontWheel: {fileID: 7631373044488624091}
+  rearWheel: {fileID: 3139245397418901522}
   handlerBar: {fileID: 592501227}
   cranksetTransform: {fileID: 1492037504}
   legPower: 10
@@ -79531,8 +79547,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speedTimeout: 2
   decelerationRate: 5
-  simulate: 0
-  simulateSpeed: 1
+  simulate: 1
+  simulateSpeed: 0
 --- !u!54 &8549442285745427864
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -79579,8 +79595,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.34936243, y: 0.391263, z: 1.2666091}
-  m_Center: {x: -0.0002939829, y: 0.6231886, z: -0.374995}
+  m_Size: {x: 0.34936243, y: 0.391263, z: 0.9504472}
+  m_Center: {x: -0.000293971, y: 0.6231886, z: -0.21691428}
 --- !u!33 &8555780043003122109
 MeshFilter:
   m_ObjectHideFlags: 0
