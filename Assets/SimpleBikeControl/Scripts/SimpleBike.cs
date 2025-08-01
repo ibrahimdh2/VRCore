@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.IO;
+using UnityEngine;
 
 namespace KikiNgao.SimpleBikeControl
 {
@@ -52,6 +53,7 @@ namespace KikiNgao.SimpleBikeControl
 
         public bool Freeze { get => m_Rigidbody.isKinematic; set => m_Rigidbody.isKinematic = value; }
         public bool FreezeCrankset { get; set; }
+        float rollingResistanceCoefficient;
 
         public bool ReadyToRide()
         {
@@ -67,8 +69,9 @@ namespace KikiNgao.SimpleBikeControl
 
             currentLegPower = legPower * 10;
             reversePower = legPower * 3;
-
+            rollingResistanceCoefficient = m_Rigidbody.mass * 9.81f;
             Freeze = true;
+
         }
 
         private void CreateCenterOfMass()
@@ -97,6 +100,7 @@ namespace KikiNgao.SimpleBikeControl
 
         private void FixedUpdate()
         {
+            Debug.Log($"Velocity magnitude: {m_Rigidbody.linearVelocity.magnitude * 3.6f} --  Speed Received: {speedReceiver.speedKph}- {calculatedTorque}");
             if (!ReadyToRide()) return;
 
             if (IsRest()) Rest();
@@ -125,7 +129,7 @@ namespace KikiNgao.SimpleBikeControl
             frontWheelCollider.brakeTorque = 0;
 
             // Apply torque based on movement and speed
-            rearWheelCollider.motorTorque = GetSimulatedTorqueFromSpeed(speedReceiver.speedKph);
+            rearWheelCollider.motorTorque = calculatedTorque;
 
             UpdateCenterOfMass();
         }
@@ -227,42 +231,35 @@ namespace KikiNgao.SimpleBikeControl
         [Header("Torque Simulation")]
         public AnimationCurve torqueCurve = AnimationCurve.Linear(0, 150f, 150f, 0f);
         public float wheelRadius = 0.35f; // meters
+        private float calculatedTorque;
+        public float kp = 10f; // Proportional gain
+        public float kd = 5f;  // Derivative gain
+        private float previousError = 0f;
 
-        public float GetSimulatedTorqueFromSpeed(float speedKmh)
+        private void Update()
         {
-            // Convert speed sensor reading to the torque needed to maintain that speed
-
-            // If no speed detected, no torque needed
-            if (speedKmh < 0.1f)
-            {
-                return 0f;
-            }
-
-            // Calculate the torque needed to overcome resistance at this speed
-            float speedMps = speedKmh / 3.6f;
-
-            // Estimate resistance forces that need to be overcome:
-            // 1. Air resistance (increases with speed squared)
-            float airResistanceForce = airResistance * speedMps * speedMps;
-
-            // 2. Rolling resistance (roughly constant)
-            float rollingResistance = m_Rigidbody.mass * 9.81f * 0.01f; // ~1% of weight
-
-            // 3. Additional drag from Unity's physics
-            float unityDrag = m_Rigidbody.linearDamping * speedMps * m_Rigidbody.mass;
-
-            // Total force needed to maintain this speed
-            float totalResistanceForce = airResistanceForce + rollingResistance + unityDrag;
-
-            // Convert force to torque (Force = Torque / wheelRadius)
-            float requiredTorque = totalResistanceForce * wheelRadius;
-
-            // Add some extra torque for acceleration/maintaining momentum
-            float momentumTorque = speedKmh * legPower * 0.5f;
-
-            float finalTorque = requiredTorque + momentumTorque;
-
-            return Mathf.Clamp(finalTorque, 0f, maxTorque);
+            calculatedTorque = CalculateTorqueFromSpeed(speedReceiver.speedKph);
         }
+        public float CalculateTorqueFromSpeed(float speedKmh)
+        {
+            float currentSpeedMps = m_Rigidbody.linearVelocity.magnitude;
+            float currentSpeedKmh = currentSpeedMps * 3.6f;
+
+            float error = speedKmh - currentSpeedKmh;
+            float derivative = (error - previousError) / Time.fixedDeltaTime;
+
+            float torque = (kp * error) + (kd * derivative);
+            previousError = error;
+
+            return Mathf.Clamp(torque, 0f, maxTorque);
+        }
+
+
+
+
+
+
+
+
     }
 }
