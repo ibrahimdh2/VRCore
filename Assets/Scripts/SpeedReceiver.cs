@@ -29,6 +29,11 @@ public class SpeedReceiver : MonoBehaviour
     void Start()
     {
         StartCoroutine(StartProcesses());
+#if !UNITY_EDITOR
+        simulate = false;
+#else
+        simulate = true;
+#endif
     }
 
     public IEnumerator StartProcesses()
