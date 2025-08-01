@@ -45,7 +45,6 @@ namespace KikiNgao.SimpleBikeControl
         [SerializeField] private TextMeshProUGUI sensorSpeedUI;
         [SerializeField] private TextMeshProUGUI currentSpeedUI;
         [SerializeField] private float turnSensitivity;
-        [SerializeField] private float rotationMultiplier;
         [SerializeField] private int maxTurnAngle;
 
         private float smoothedSpeed;
@@ -127,7 +126,7 @@ namespace KikiNgao.SimpleBikeControl
                 inputAngle = CalculateHandlebarAngle() / maxTurnAngle;
             }
 
-            float nextAngle = temporaryFrontWheelAngle * inputAngle;
+            float nextAngle = temporaryFrontWheelAngle * inputAngle * turnSensitivity;
             frontWheelCollider.steerAngle = nextAngle;
 
             Quaternion handlerBarLocalRotation = Quaternion.Euler(0, nextAngle - handlerBarYLastAngle, 0);
@@ -137,7 +136,7 @@ namespace KikiNgao.SimpleBikeControl
             if (handlebarAssembly != null)
             {
                 Quaternion targetRotation = Quaternion.Euler(0, nextAngle, 0);
-                handlebarAssembly.localRotation = Quaternion.Lerp(handlebarAssembly.localRotation, targetRotation, turningSmooth);
+                handlebarAssembly.localRotation = Quaternion.Lerp(handlebarAssembly.localRotation , targetRotation, turningSmooth);
             }
         }
 
