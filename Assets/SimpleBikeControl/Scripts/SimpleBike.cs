@@ -10,12 +10,10 @@ namespace KikiNgao.SimpleBikeControl
         public Transform handlebarAssembly;
 
         public Transform bikerHolder;
-
         public WheelCollider frontWheelCollider;
         public WheelCollider rearWheelCollider;
         public GameObject frontWheel;
         public GameObject rearWheel;
-
         public Transform handlerBar;
         public Transform cranksetTransform;
 
@@ -28,8 +26,8 @@ namespace KikiNgao.SimpleBikeControl
         [SerializeField] private float restAngularDrag = .2f;
         [SerializeField] private float forceRatio = 2f;
         [SerializeField] private AnimationCurve frontWheelRestrictCurve = new AnimationCurve(new Keyframe(0f, 35f), new Keyframe(50f, 1f));
-        float maxTorque = 5000f;
-        float maxEffectiveSpeed = 60f; // km/h where torque starts to drop
+        public float maxTorque = 5000f;
+
         private Transform centerOfMass;
         private Rigidbody m_Rigidbody;
 
@@ -42,25 +40,40 @@ namespace KikiNgao.SimpleBikeControl
         private float handlerBarYLastAngle;
         private float currentLegPower;
         private float reversePower;
-        private EventManager eventManager;
+
+        private float rollingResistanceCoefficient;
+
+        public bool Freeze { get => m_Rigidbody.isKinematic; set => m_Rigidbody.isKinematic = value; }
+        public bool FreezeCrankset { get; set; }
+
+        [SerializeField] private SpeedReceiver speedReceiver;
+        [SerializeField] private float turnSensitivity;
+        [SerializeField] private float rotationMultiplier;
+        [SerializeField] private int maxTurnAngle;
+
+        private float powerUp = 1f;
 
         public bool IsReverse() => false;
         public bool IsMovingToward => speedReceiver.speedKph > 0;
-        private bool IsRest() => speedReceiver.speedKph < 0.1f; // Changed threshold
+        private bool IsRest() => speedReceiver.speedKph < 0.1f;
         public bool IsMoving() => speedReceiver.speedKph > 0.1f || m_Rigidbody.linearVelocity.sqrMagnitude > 0.01f;
         private bool IsTurning() => frontWheelCollider.steerAngle != 0;
         private bool IsSpeedUp() => false;
 
-        public bool Freeze { get => m_Rigidbody.isKinematic; set => m_Rigidbody.isKinematic = value; }
-        public bool FreezeCrankset { get; set; }
-        float rollingResistanceCoefficient;
+        // PID control fields
+        public float kp = 10f;
+        public float ki = 0.5f;
+        public float kd = 5f;
 
-        public bool ReadyToRide()
-        {
-            if (noBikerCtrl) return true;
-            if (bikerHolder.childCount == 0) return false;
-            return bikerHolder.GetChild(0).CompareTag("Player");
-        }
+        private float previousError = 0f;
+        private float integral = 0f;
+
+        private float smoothedSpeed = 0f;
+        private float calculatedTorque;
+
+        [Header("Torque Simulation")]
+        public AnimationCurve torqueCurve = AnimationCurve.Linear(0, 150f, 150f, 0f);
+        public float wheelRadius = 0.35f;
 
         void Start()
         {
@@ -71,7 +84,6 @@ namespace KikiNgao.SimpleBikeControl
             reversePower = legPower * 3;
             rollingResistanceCoefficient = m_Rigidbody.mass * 9.81f;
             Freeze = true;
-
         }
 
         private void CreateCenterOfMass()
@@ -90,18 +102,17 @@ namespace KikiNgao.SimpleBikeControl
             m_Rigidbody.centerOfMass = centerOfMass.localPosition;
         }
 
-        float powerUp = 1f;
-        [SerializeField] private SpeedReceiver speedReceiver;
-        [SerializeField] private float turnSensitivity;
-        [SerializeField] private float rotationMultiplier;
-        [SerializeField] private int maxTurnAngle;
-
-
-
         private void FixedUpdate()
         {
-            Debug.Log($"Velocity magnitude: {m_Rigidbody.linearVelocity.magnitude * 3.6f} --  Speed Received: {speedReceiver.speedKph}- {calculatedTorque}");
             if (!ReadyToRide()) return;
+
+            // Smooth the target speed (optional)
+            float targetSpeed = speedReceiver.speedKph;
+            smoothedSpeed = Mathf.Lerp(smoothedSpeed, targetSpeed, 0.1f);
+
+            calculatedTorque = CalculateTorqueFromSpeed(smoothedSpeed);
+
+            Debug.Log($"[Speed Sensor: {speedReceiver.speedKph:F1} KPH] | [Unity Speed: {m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH] | [Torque: {calculatedTorque:F1}]");
 
             if (IsRest()) Rest();
             else if (IsMoving()) MovingBike();
@@ -111,13 +122,7 @@ namespace KikiNgao.SimpleBikeControl
             if (!FreezeCrankset) UpdateCranksetRotation();
             UpdateWheelDisplay();
 
-            // Prevent bicycle tilt (lock Z-axis rotation)
             transform.rotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y, 0f);
-        }
-
-        private void UpdateLegPower(bool speedUp)
-        {
-
         }
 
         private void MovingBike()
@@ -127,8 +132,6 @@ namespace KikiNgao.SimpleBikeControl
             m_Rigidbody.angularDamping = 5 + GetBikeSpeedMs() / (m_Rigidbody.mass / 10);
 
             frontWheelCollider.brakeTorque = 0;
-
-            // Apply torque based on movement and speed
             rearWheelCollider.motorTorque = calculatedTorque;
 
             UpdateCenterOfMass();
@@ -147,12 +150,10 @@ namespace KikiNgao.SimpleBikeControl
             float nextAngle = temporaryFrontWheelAngle * inputAngle;
             frontWheelCollider.steerAngle = nextAngle;
 
-            // Visually rotate handlerBar (grips)
             Quaternion handlerBarLocalRotation = Quaternion.Euler(0, nextAngle - handlerBarYLastAngle, 0);
             handlerBar.rotation = Quaternion.Lerp(handlerBar.rotation, handlerBar.rotation * handlerBarLocalRotation, turningSmooth);
             handlerBarYLastAngle = nextAngle;
 
-            // Visually rotate the handlebar assembly (optional visual fork turning)
             if (handlebarAssembly != null)
             {
                 Quaternion targetRotation = Quaternion.Euler(0, nextAngle, 0);
@@ -187,10 +188,7 @@ namespace KikiNgao.SimpleBikeControl
 
         private void UpdateWheelDisplay()
         {
-            Vector3 pos;
-            Quaternion rot;
-
-            rearWheelCollider.GetWorldPose(out pos, out rot);
+            rearWheelCollider.GetWorldPose(out Vector3 pos, out Quaternion rot);
             rearWheel.transform.position = pos;
 
             Quaternion rearWheelRot = rearWheel.transform.rotation;
@@ -228,38 +226,27 @@ namespace KikiNgao.SimpleBikeControl
             return -handlebarTurnAngle;
         }
 
-        [Header("Torque Simulation")]
-        public AnimationCurve torqueCurve = AnimationCurve.Linear(0, 150f, 150f, 0f);
-        public float wheelRadius = 0.35f; // meters
-        private float calculatedTorque;
-        public float kp = 10f; // Proportional gain
-        public float kd = 5f;  // Derivative gain
-        private float previousError = 0f;
-
-        private void Update()
+        private float CalculateTorqueFromSpeed(float targetSpeedKmh)
         {
-            calculatedTorque = CalculateTorqueFromSpeed(speedReceiver.speedKph);
-        }
-        public float CalculateTorqueFromSpeed(float speedKmh)
-        {
-            float currentSpeedMps = m_Rigidbody.linearVelocity.magnitude;
-            float currentSpeedKmh = currentSpeedMps * 3.6f;
 
-            float error = speedKmh - currentSpeedKmh;
-            float derivative = (error - previousError) / Time.fixedDeltaTime;
+            float currentSpeedMS = m_Rigidbody.linearVelocity.magnitude; // m/s
+            float targetSpeedMS = targetSpeedKmh / 3.6f;
 
-            float torque = (kp * error) + (kd * derivative);
-            previousError = error;
+            // Required acceleration to reach target speed in 1 physics frame
+            float accelerationNeeded = (targetSpeedMS - currentSpeedMS) / Time.fixedDeltaTime;
 
-            return Mathf.Clamp(torque, 0f, maxTorque);
+            // Torque = mass × acceleration × wheel radius
+            float requiredTorque = (m_Rigidbody.mass + (frontWheelCollider.mass * 2f)) * accelerationNeeded * wheelRadius;
+
+            // Clamp torque
+            return Mathf.Clamp(requiredTorque, 0f, maxTorque);
         }
 
-
-
-
-
-
-
-
+        public bool ReadyToRide()
+        {
+            if (noBikerCtrl) return true;
+            if (bikerHolder.childCount == 0) return false;
+            return bikerHolder.GetChild(0).CompareTag("Player");
+        }
     }
 }

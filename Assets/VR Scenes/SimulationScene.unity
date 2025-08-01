@@ -31605,12 +31605,16 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  maxTorque: 5000
   leftController: {fileID: 1718210044}
   rightController: {fileID: 319434064}
   speedReceiver: {fileID: 2526410015591386032}
   turnSensitivity: 1
   rotationMultiplier: 2
   maxTurnAngle: 70
+  kp: 10
+  ki: 0.5
+  kd: 5
   torqueCurve:
     serializedVersion: 2
     m_Curve:
@@ -79502,12 +79506,16 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  maxTorque: 50000
   leftController: {fileID: 1718210044}
   rightController: {fileID: 319434064}
   speedReceiver: {fileID: 8549442285745427863}
   turnSensitivity: 1
   rotationMultiplier: 2
   maxTurnAngle: 70
+  kp: 10
+  ki: 0.5
+  kd: 5
   torqueCurve:
     serializedVersion: 2
     m_Curve:
