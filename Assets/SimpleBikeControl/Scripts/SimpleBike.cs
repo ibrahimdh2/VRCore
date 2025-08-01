@@ -19,15 +19,12 @@ namespace KikiNgao.SimpleBikeControl
         public Transform cranksetTransform;
 
         [SerializeField] private float legPower = 10;
-        [SerializeField] private float powerUpMax = 2;
-        [SerializeField] private float powerUpSpeed = .5f;
         [SerializeField] private float airResistance = 6;
         [SerializeField] private float turningSmooth = .8f;
         [SerializeField] private float restDrag = 2f;
         [SerializeField] private float restAngularDrag = .2f;
         [SerializeField] private float forceRatio = 2f;
         [SerializeField] private AnimationCurve frontWheelRestrictCurve = new AnimationCurve(new Keyframe(0f, 35f), new Keyframe(50f, 1f));
-        public float maxTorque = 5000f;
 
         private Transform centerOfMass;
         private Rigidbody m_Rigidbody;
@@ -39,9 +36,6 @@ namespace KikiNgao.SimpleBikeControl
 
         private float temporaryFrontWheelAngle;
         private float handlerBarYLastAngle;
-        private float currentLegPower;
-        private float reversePower;
-
         private float rollingResistanceCoefficient;
 
         public bool Freeze { get => m_Rigidbody.isKinematic; set => m_Rigidbody.isKinematic = value; }
@@ -54,37 +48,12 @@ namespace KikiNgao.SimpleBikeControl
         [SerializeField] private float rotationMultiplier;
         [SerializeField] private int maxTurnAngle;
 
-        private float powerUp = 1f;
-
-        public bool IsReverse() => false;
-        public bool IsMovingToward => speedReceiver.speedKph > 0;
-        private bool IsRest() => speedReceiver.speedKph < 0.1f;
-        public bool IsMoving() => speedReceiver.speedKph > 0.1f || m_Rigidbody.linearVelocity.sqrMagnitude > 0.01f;
-        private bool IsTurning() => frontWheelCollider.steerAngle != 0;
-        private bool IsSpeedUp() => false;
-
-        // PID control fields
-        public float kp = 10f;
-        public float ki = 0.5f;
-        public float kd = 5f;
-
-        private float previousError = 0f;
-        private float integral = 0f;
-
-        private float smoothedSpeed = 0f;
-        private float calculatedTorque;
-
-        [Header("Torque Simulation")]
-        public AnimationCurve torqueCurve = AnimationCurve.Linear(0, 150f, 150f, 0f);
-        public float wheelRadius = 0.35f;
+        private float smoothedSpeed;
 
         void Start()
         {
             CreateCenterOfMass();
             SettingRigidbody();
-
-            currentLegPower = legPower * 10;
-            reversePower = legPower * 3;
             rollingResistanceCoefficient = m_Rigidbody.mass * 9.81f;
             Freeze = true;
         }
@@ -113,16 +82,16 @@ namespace KikiNgao.SimpleBikeControl
             float targetSpeed = speedReceiver.speedKph;
             smoothedSpeed = Mathf.Lerp(smoothedSpeed, targetSpeed, 0.1f);
 
-            calculatedTorque = CalculateTorqueFromSpeed(smoothedSpeed);
+            // Apply velocity directly
+            float targetSpeedMS = smoothedSpeed / 3.6f;
+            m_Rigidbody.linearVelocity = transform.forward * targetSpeedMS;
 
-            //Debug.Log($"[Speed Sensor: {speedReceiver.speedKph:F1} KPH] | [Unity Speed: {m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH] | [Torque: {calculatedTorque:F1}]");
-
+            // Debug / UI
             if (sensorSpeedUI != null)
             {
-                sensorSpeedUI.text = $"{speedReceiver.speedKph:F1} KPH";
-                currentSpeedUI.text = $"{m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH"; 
+                sensorSpeedUI.text = $"s: {speedReceiver.speedKph:F1} KPH";
+                currentSpeedUI.text = $"c: {m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH";
             }
-
 
             if (IsRest()) Rest();
             else if (IsMoving()) MovingBike();
@@ -138,11 +107,12 @@ namespace KikiNgao.SimpleBikeControl
         private void MovingBike()
         {
             Freeze = false;
-            m_Rigidbody.linearDamping = m_Rigidbody.mass > 0 ? GetBikeSpeedMs() / m_Rigidbody.mass * airResistance : 0f;
-            m_Rigidbody.angularDamping = 5 + GetBikeSpeedMs() / (m_Rigidbody.mass / 10);
+            m_Rigidbody.linearDamping = 0f;
+            m_Rigidbody.angularDamping = 0f;
 
             frontWheelCollider.brakeTorque = 0;
-            rearWheelCollider.motorTorque = calculatedTorque;
+            rearWheelCollider.brakeTorque = 0;
+            rearWheelCollider.motorTorque = 0;
 
             UpdateCenterOfMass();
         }
@@ -236,27 +206,17 @@ namespace KikiNgao.SimpleBikeControl
             return -handlebarTurnAngle;
         }
 
-        private float CalculateTorqueFromSpeed(float targetSpeedKmh)
-        {
-
-            float currentSpeedMS = m_Rigidbody.linearVelocity.magnitude; // m/s
-            float targetSpeedMS = targetSpeedKmh / 3.6f;
-
-            // Required acceleration to reach target speed in 1 physics frame
-            float accelerationNeeded = (targetSpeedMS - currentSpeedMS) / Time.fixedDeltaTime;
-
-            // Torque = mass × acceleration × wheel radius
-            float requiredTorque = (m_Rigidbody.mass + (frontWheelCollider.mass * 2f)) * accelerationNeeded * wheelRadius;
-
-            // Clamp torque
-            return Mathf.Clamp(requiredTorque, 0f, maxTorque);
-        }
-
         public bool ReadyToRide()
         {
             if (noBikerCtrl) return true;
             if (bikerHolder.childCount == 0) return false;
             return bikerHolder.GetChild(0).CompareTag("Player");
         }
+
+        public bool IsReverse() => false;
+        public bool IsMovingToward => speedReceiver.speedKph > 0;
+        private bool IsRest() => speedReceiver.speedKph < 0.1f;
+        public bool IsMoving() => speedReceiver.speedKph > 0.1f || m_Rigidbody.linearVelocity.sqrMagnitude > 0.01f;
+        private bool IsTurning() => frontWheelCollider.steerAngle != 0;
     }
 }

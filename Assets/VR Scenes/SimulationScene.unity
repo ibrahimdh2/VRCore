@@ -1580,7 +1580,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 164531830}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -1918,7 +1918,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 208208001}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -3434,7 +3434,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 315457027}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -4497,7 +4497,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 400664542}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -7831,7 +7831,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 613150697}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -10618,7 +10618,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 793503164}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -11777,7 +11777,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 905782231}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -12586,6 +12586,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5142458502795676489, guid: 060d01e5c32f0c5428c63d26adebdc11, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7986684313673828701, guid: 060d01e5c32f0c5428c63d26adebdc11, type: 3}
+      propertyPath: m_TrackingType
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7986684313673828701, guid: 060d01e5c32f0c5428c63d26adebdc11, type: 3}
@@ -13771,7 +13775,7 @@ Transform:
   m_GameObject: {fileID: 1032389727}
   serializedVersion: 2
   m_LocalRotation: {x: -0.0000000074505797, y: 0.69750756, z: 0.000000035623085, w: 0.7165775}
-  m_LocalPosition: {x: -0, y: 0.329, z: 0}
+  m_LocalPosition: {x: 0, y: -0.44, z: -0.019}
   m_LocalScale: {x: 0.23102002, y: 0.23101999, z: 0.23101999}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -15857,7 +15861,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1246864416}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -16160,7 +16164,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 0.95, z: 1}
   m_Center: {x: 1.1196418e-11, y: -4.7, z: -5.632024e-12}
@@ -16181,7 +16185,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 0.95, z: 1}
   m_Center: {x: 1.1196418e-11, y: -4.7, z: -5.632024e-12}
@@ -16225,7 +16229,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1264508270}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -18074,7 +18078,7 @@ MonoBehaviour:
   wayPointIndex: 0
   currentWayPoint: {x: 0, y: 0, z: 0}
   currentWayPointTraversalOrder: 2
-  yPos: 0
+  yPos: 0.4
   tiltIntensity: 0
   tiltSpeed: 0
   followWayPoints: 1
@@ -18375,7 +18379,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1457787222}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -22680,7 +22684,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1810633960}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -23667,7 +23671,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1898545732}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -26411,7 +26415,7 @@ MonoBehaviour:
   wayPointIndex: 2
   currentWayPoint: {x: 0, y: 0, z: 0}
   currentWayPointTraversalOrder: 2
-  yPos: 0.5904331
+  yPos: 0.409
   tiltIntensity: 0
   tiltSpeed: 0
   followWayPoints: 1
@@ -30013,7 +30017,7 @@ Transform:
   m_GameObject: {fileID: 919132147916372533}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.6526879, z: -0, w: 0.7576269}
-  m_LocalPosition: {x: -20.852, y: 0.426, z: -17.39}
+  m_LocalPosition: {x: -20.852, y: 0.409, z: -17.39}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -30030,7 +30034,7 @@ Transform:
   m_GameObject: {fileID: 919132148298183753}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 222.31, y: 0.76136684, z: 6.732416}
+  m_LocalPosition: {x: 222.31, y: 0.4, z: 6.732416}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -30053,7 +30057,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.73233086, z: -0, w: 0.6809491}
   m_LocalPosition: {x: 60.7, y: 0.363, z: -6}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.57573, y: 0.57573, z: 0.57573}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4167280743601694708}
@@ -31946,8 +31950,6 @@ MonoBehaviour:
   handlerBar: {fileID: 3303353986955386090}
   cranksetTransform: {fileID: 1228197197837903152}
   legPower: 10
-  powerUpMax: 2
-  powerUpSpeed: 0.5
   airResistance: 6
   turningSmooth: 0.8
   restDrag: 2
@@ -31986,7 +31988,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  maxTorque: 5000
   leftController: {fileID: 1718210044}
   rightController: {fileID: 319434064}
   speedReceiver: {fileID: 2526410015591386032}
@@ -31995,34 +31996,6 @@ MonoBehaviour:
   turnSensitivity: 1
   rotationMultiplier: 2
   maxTurnAngle: 70
-  kp: 10
-  ki: 0.5
-  kd: 5
-  torqueCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 150
-      inSlope: 0
-      outSlope: -1
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 150
-      value: 0
-      inSlope: -1
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  wheelRadius: 0.35
 --- !u!4 &849405502205845722
 Transform:
   m_ObjectHideFlags: 0
@@ -79849,8 +79822,6 @@ MonoBehaviour:
   handlerBar: {fileID: 592501227}
   cranksetTransform: {fileID: 1492037504}
   legPower: 10
-  powerUpMax: 2
-  powerUpSpeed: 0.5
   airResistance: 6
   turningSmooth: 0.8
   restDrag: 2
@@ -79889,7 +79860,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  maxTorque: 500000
   leftController: {fileID: 1718210044}
   rightController: {fileID: 319434064}
   speedReceiver: {fileID: 8549442285745427863}
@@ -79898,34 +79868,6 @@ MonoBehaviour:
   turnSensitivity: 1
   rotationMultiplier: 2
   maxTurnAngle: 70
-  kp: 10
-  ki: 0.5
-  kd: 5
-  torqueCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 150
-      inSlope: 0
-      outSlope: -1
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 150
-      value: 0
-      inSlope: -1
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  wheelRadius: 0.35
 --- !u!114 &8549442285745427863
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79967,7 +79909,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 1
-  m_Constraints: 64
+  m_Constraints: 80
   m_CollisionDetection: 0
 --- !u!65 &8549442285745427865
 BoxCollider:
