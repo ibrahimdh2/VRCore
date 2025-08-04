@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,67 +9,53 @@ public class MissingTextureGUIDChecker
     [MenuItem("Tools/Fix Material Texture References")]
     public static void FindAndFixMissingTextureGUIDs()
     {
-        Debug.Log("🔧 Starting complete material and texture reference fix...");
+        Debug.Log("🔧 Starting material texture reference fix...");
 
-        // 1. Build GUID maps for all assets
+        // 1. Build GUID to path mapping for textures
         var textureGuidToPath = BuildTextureGuidMap();
-        var materialGuidToPath = BuildMaterialGuidMap();
+        Debug.Log($"Found {textureGuidToPath.Count} texture assets");
 
-        Debug.Log($"Found {textureGuidToPath.Count} textures and {materialGuidToPath.Count} materials");
+        // 2. Process each material file directly
+        int totalFixed = 0;
+        string[] materialFiles = Directory.GetFiles("Assets", "*.mat", SearchOption.AllDirectories);
 
-        // 2. Fix all material texture assignments by reading .mat files directly
-        int textureReassignments = FixMaterialTextureReferences(textureGuidToPath);
+        foreach (string matFile in materialFiles)
+        {
+            totalFixed += ProcessMaterialFile(matFile, textureGuidToPath);
+        }
 
-        // 3. Fix missing material references in mesh renderers
-        int materialReassignments = FixMeshRendererMaterialReferences(materialGuidToPath);
-
-        // 4. Force Unity to save and refresh everything
+        // 3. Save everything
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
-        // 5. Force reimport all materials to ensure proper serialization
-        ForceReimportAllMaterials();
-
-        Debug.Log($"✅ COMPLETE: Fixed {textureReassignments} texture references and {materialReassignments} material references");
+        Debug.Log($"✅ Successfully processed {materialFiles.Length} materials, fixed {totalFixed} texture assignments");
     }
 
     private static Dictionary<string, string> BuildTextureGuidMap()
     {
         var guidToPath = new Dictionary<string, string>();
 
+        // Find all texture meta files
+        string[] allFiles = Directory.GetFiles("Assets", "*.meta", SearchOption.AllDirectories);
         string[] textureExtensions = { ".png", ".jpg", ".jpeg", ".tga", ".psd", ".exr", ".hdr", ".tiff", ".bmp" };
 
-        foreach (string ext in textureExtensions)
+        foreach (string metaFile in allFiles)
         {
-            string[] metaPaths = Directory.GetFiles("Assets", $"*{ext}.meta", SearchOption.AllDirectories);
-            foreach (string metaPath in metaPaths)
-            {
-                string guid = ExtractGuidFromMetaFile(metaPath);
-                if (!string.IsNullOrEmpty(guid))
-                {
-                    string assetPath = metaPath.Replace(".meta", "").Replace("\\", "/");
-                    if (assetPath.StartsWith("Assets/"))
-                        guidToPath[guid] = assetPath;
-                }
-            }
-        }
+            string assetFile = metaFile.Replace(".meta", "");
 
-        return guidToPath;
-    }
+            // Check if this is a texture file
+            bool isTexture = textureExtensions.Any(ext => assetFile.ToLower().EndsWith(ext));
+            if (!isTexture) continue;
 
-    private static Dictionary<string, string> BuildMaterialGuidMap()
-    {
-        var guidToPath = new Dictionary<string, string>();
-
-        string[] matMetaPaths = Directory.GetFiles("Assets", "*.mat.meta", SearchOption.AllDirectories);
-        foreach (string metaPath in matMetaPaths)
-        {
-            string guid = ExtractGuidFromMetaFile(metaPath);
+            // Extract GUID from meta file
+            string guid = ExtractGuidFromMetaFile(metaFile);
             if (!string.IsNullOrEmpty(guid))
             {
-                string assetPath = metaPath.Replace(".meta", "").Replace("\\", "/");
+                string assetPath = assetFile.Replace("\\", "/");
                 if (assetPath.StartsWith("Assets/"))
+                {
                     guidToPath[guid] = assetPath;
+                }
             }
         }
 
@@ -97,215 +82,138 @@ public class MissingTextureGUIDChecker
         return null;
     }
 
-    private static int FixMaterialTextureReferences(Dictionary<string, string> textureGuidToPath)
+    private static int ProcessMaterialFile(string matFile, Dictionary<string, string> textureGuidToPath)
     {
-        int totalFixed = 0;
-        string[] materialPaths = Directory.GetFiles("Assets", "*.mat", SearchOption.AllDirectories);
-
-        foreach (string matPath in materialPaths)
+        try
         {
-            try
+            string assetPath = matFile.Replace("\\", "/");
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+
+            if (material == null)
             {
-                string materialContent = File.ReadAllText(matPath);
-                string assetPath = matPath.Replace("\\", "/");
+                Debug.LogWarning($"Could not load material: {assetPath}");
+                return 0;
+            }
 
-                // Load the material
-                Material material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
-                if (material == null) continue;
+            // Read the raw material file content
+            string materialContent = File.ReadAllText(matFile);
 
-                // Parse texture references from the .mat file
-                var textureReferences = ParseTextureReferencesFromMatFile(materialContent);
+            // Parse texture assignments from the material file
+            var textureAssignments = ParseMaterialTextureAssignments(materialContent);
 
-                foreach (var texRef in textureReferences)
+            int fixedCount = 0;
+            foreach (var assignment in textureAssignments)
+            {
+                string propertyName = assignment.Key;
+                string textureGuid = assignment.Value;
+
+                // Skip empty or null GUIDs
+                if (string.IsNullOrEmpty(textureGuid) || textureGuid == "0000000000000000f000000000000000")
+                    continue;
+
+                // Find the texture by GUID
+                if (textureGuidToPath.TryGetValue(textureGuid, out string texturePath))
                 {
-                    string propertyName = texRef.Key;
-                    string guid = texRef.Value;
+                    Texture texture = AssetDatabase.LoadAssetAtPath<Texture>(texturePath);
 
-                    if (textureGuidToPath.TryGetValue(guid, out string texturePath))
+                    if (texture != null && material.HasProperty(propertyName))
                     {
-                        Texture texture = AssetDatabase.LoadAssetAtPath<Texture>(texturePath);
-                        if (texture != null && material.HasProperty(propertyName))
+                        // Get current texture to compare
+                        Texture currentTexture = material.GetTexture(propertyName);
+
+                        // Only assign if different or if current is null (broken reference)
+                        if (currentTexture != texture)
                         {
-                            // FORCE reassign regardless of current state
                             material.SetTexture(propertyName, texture);
                             EditorUtility.SetDirty(material);
-                            totalFixed++;
-                            Debug.Log($"🔄 Force assigned {Path.GetFileName(texturePath)} → {material.name}.{propertyName}");
+                            fixedCount++;
+
+                            string currentName = currentTexture != null ? currentTexture.name : "null";
+                            Debug.Log($"🔄 {material.name}.{propertyName}: {currentName} → {texture.name}");
                         }
                     }
-                    else if (!string.IsNullOrEmpty(guid) && guid != "0000000000000000f000000000000000")
+                    else if (!material.HasProperty(propertyName))
                     {
-                        Debug.LogWarning($"❌ Missing texture GUID {guid} in {material.name}.{propertyName}");
+                        Debug.LogWarning($"Property {propertyName} not found on material {material.name}");
                     }
                 }
+                else
+                {
+                    Debug.LogWarning($"Texture with GUID {textureGuid} not found for {material.name}.{propertyName}");
+                }
             }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Error processing material {matPath}: {e.Message}");
-            }
-        }
 
-        return totalFixed;
+            return fixedCount;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error processing material {matFile}: {e.Message}");
+            return 0;
+        }
     }
 
-    private static Dictionary<string, string> ParseTextureReferencesFromMatFile(string materialContent)
+    private static Dictionary<string, string> ParseMaterialTextureAssignments(string materialContent)
     {
-        var textureRefs = new Dictionary<string, string>();
+        var assignments = new Dictionary<string, string>();
         string[] lines = materialContent.Split('\n');
 
-        // Common texture properties in Unity materials
-        string[] textureProperties = {
-            "_MainTex", "_BaseMap", "_BumpMap", "_MetallicGlossMap", "_OcclusionMap",
-            "_EmissionMap", "_DetailAlbedoMap", "_DetailNormalMap", "_ParallaxMap",
-            "_SpecGlossMap", "_DetailMask", "_Cube", "_CubeMap"
-        };
+        // State tracking for parsing
+        string currentProperty = null;
+        bool inTexturesSection = false;
 
         for (int i = 0; i < lines.Length; i++)
         {
-            string line = lines[i].Trim();
+            string line = lines[i];
+            string trimmedLine = line.Trim();
 
-            foreach (string property in textureProperties)
+            // Check if we're entering the textures section
+            if (trimmedLine.StartsWith("m_SavedProperties:"))
             {
-                // Look for property definition
-                if (line.Contains($"{property}:") || line.Contains($"name: {property}"))
+                // Look for m_TexEnvs in the next few lines
+                for (int j = i + 1; j < Mathf.Min(i + 10, lines.Length); j++)
                 {
-                    // Search for the guid in the next few lines
-                    for (int j = i + 1; j < Mathf.Min(i + 15, lines.Length); j++)
+                    if (lines[j].Trim().StartsWith("m_TexEnvs:"))
                     {
-                        string nextLine = lines[j].Trim();
-
-                        if (nextLine.StartsWith("guid: "))
-                        {
-                            string guid = nextLine.Substring(6).Trim();
-                            if (!string.IsNullOrEmpty(guid) && guid != "0000000000000000f000000000000000")
-                            {
-                                textureRefs[property] = guid;
-                            }
-                            break;
-                        }
-
-                        // Stop if we hit another property section
-                        if (nextLine.Contains("serializedVersion:") && j > i + 5)
-                            break;
+                        inTexturesSection = true;
+                        i = j;
+                        break;
                     }
                 }
-            }
-        }
-
-        return textureRefs;
-    }
-
-    private static int FixMeshRendererMaterialReferences(Dictionary<string, string> materialGuidToPath)
-    {
-        int totalFixed = 0;
-
-        // Find all prefabs and scene objects with MeshRenderer/SkinnedMeshRenderer
-        string[] prefabPaths = Directory.GetFiles("Assets", "*.prefab", SearchOption.AllDirectories);
-
-        foreach (string prefabPath in prefabPaths)
-        {
-            try
-            {
-                string prefabContent = File.ReadAllText(prefabPath);
-                string assetPath = prefabPath.Replace("\\", "/");
-
-                // Load prefab
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
-                if (prefab == null) continue;
-
-                // Get all renderers in prefab
-                var renderers = prefab.GetComponentsInChildren<Renderer>(true);
-
-                foreach (var renderer in renderers)
-                {
-                    if (renderer == null) continue;
-
-                    // Parse material GUIDs from prefab file
-                    var materialGuids = ParseMaterialGuidsFromPrefab(prefabContent, renderer);
-
-                    if (materialGuids.Count > 0)
-                    {
-                        Material[] materials = new Material[materialGuids.Count];
-                        bool hasChanges = false;
-
-                        for (int i = 0; i < materialGuids.Count; i++)
-                        {
-                            string guid = materialGuids[i];
-                            if (materialGuidToPath.TryGetValue(guid, out string matPath))
-                            {
-                                Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-                                materials[i] = mat;
-                                if (mat != null) hasChanges = true;
-                            }
-                        }
-
-                        if (hasChanges)
-                        {
-                            renderer.materials = materials;
-                            EditorUtility.SetDirty(prefab);
-                            totalFixed++;
-                            Debug.Log($"🔄 Fixed materials on {renderer.name} in {prefab.name}");
-                        }
-                    }
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Error processing prefab {prefabPath}: {e.Message}");
-            }
-        }
-
-        return totalFixed;
-    }
-
-    private static List<string> ParseMaterialGuidsFromPrefab(string prefabContent, Renderer renderer)
-    {
-        var guids = new List<string>();
-
-        // This is a simplified parser - in practice you'd need more robust YAML parsing
-        // Look for m_Materials section and extract GUIDs
-        string[] lines = prefabContent.Split('\n');
-        bool inMaterialsSection = false;
-
-        for (int i = 0; i < lines.Length; i++)
-        {
-            string line = lines[i].Trim();
-
-            if (line.Contains("m_Materials:"))
-            {
-                inMaterialsSection = true;
                 continue;
             }
 
-            if (inMaterialsSection)
+            if (!inTexturesSection) continue;
+
+            // Check if we've left the textures section
+            if (trimmedLine.StartsWith("m_Floats:") || trimmedLine.StartsWith("m_Colors:"))
             {
-                if (line.StartsWith("guid: "))
+                inTexturesSection = false;
+                continue;
+            }
+
+            // Look for texture property names
+            if (trimmedLine.StartsWith("- _"))
+            {
+                // Extract property name (e.g., "- _MainTex:" becomes "_MainTex")
+                int colonIndex = trimmedLine.IndexOf(':');
+                if (colonIndex > 0)
                 {
-                    string guid = line.Substring(6).Trim();
-                    if (!string.IsNullOrEmpty(guid))
-                        guids.Add(guid);
+                    currentProperty = trimmedLine.Substring(2, colonIndex - 2); // Remove "- " prefix
                 }
-                else if (line.StartsWith("-") || (!line.StartsWith(" ") && !line.StartsWith("guid")))
+            }
+
+            // Look for GUID within a property section
+            if (!string.IsNullOrEmpty(currentProperty) && trimmedLine.StartsWith("guid: "))
+            {
+                string guid = trimmedLine.Substring(6).Trim();
+                if (!string.IsNullOrEmpty(guid))
                 {
-                    if (!line.StartsWith("- {fileID:"))
-                        inMaterialsSection = false;
+                    assignments[currentProperty] = guid;
+                    currentProperty = null; // Reset for next property
                 }
             }
         }
 
-        return guids;
-    }
-
-    private static void ForceReimportAllMaterials()
-    {
-        string[] materialPaths = Directory.GetFiles("Assets", "*.mat", SearchOption.AllDirectories);
-
-        foreach (string matPath in materialPaths)
-        {
-            string assetPath = matPath.Replace("\\", "/");
-            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
-        }
-
-        Debug.Log($"🔄 Force reimported {materialPaths.Length} materials");
+        return assignments;
     }
 }
