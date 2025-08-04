@@ -16,18 +16,18 @@ public class WheelAndPedalRotation : MonoBehaviour
     [SerializeField] private float wheelRotationSpeedModifier;
 
 
+    [SerializeField] private WaypointMovement waypointMovement;
     [SerializeField] private Animator anim;
-    [SerializeField] private SpeedReceiver speedReceiver;
 
     void Update()
     {
-        anim.speed = speedReceiver.speedKph/ 10f;
-        pedalRotationSpeed = (speedReceiver.speedKph * pedalRotationSpeedModifier) * Time.deltaTime;
+        anim.speed = waypointMovement.moveSpeed / 10f;
+        pedalRotationSpeed = (waypointMovement.moveSpeed * pedalRotationSpeedModifier) * Time.deltaTime;
         wheelRotationSpeed = (pedalRotationSpeed * wheelRotationSpeedModifier) * Time.deltaTime;
         pedalGear.Rotate(Vector3.right, pedalRotationSpeed);
         leftPedal.Rotate(-Vector3.right, pedalRotationSpeed);
         rightPedal.Rotate(Vector3.right, pedalRotationSpeed);
-        //frontWheel.Rotate(Vector3.forward, wheelRotationSpeed);
-        //backWheel.Rotate(Vector3.forward, wheelRotationSpeed);
+        frontWheel.Rotate(Vector3.forward, wheelRotationSpeed);
+        backWheel.Rotate(Vector3.forward, wheelRotationSpeed);
     }
 }
