@@ -6,61 +6,76 @@ using UnityEngine;
 
 public class MissingTextureGUIDChecker
 {
-    [MenuItem("Tool/Check Missing Texture GUIDs in Materials")]
-    public static void FindMissingTextureGUIDs()
+    [MenuItem("Tools/Fix Material Texture References")]
+    public static void FindAndFixMissingTextureGUIDs()
     {
-        // 1. Collect all texture GUIDs from .meta files in Assets
-        var allTextureMetaGUIDs = new HashSet<string>();
-        string[] texturePaths = Directory.GetFiles("Assets", "*.*", SearchOption.AllDirectories)
+        // 1. Build GUID → path map for all texture assets
+        var guidToPath = new Dictionary<string, string>();
+        string[] textureMetaPaths = Directory.GetFiles("Assets", "*.*", SearchOption.AllDirectories)
             .Where(p => p.EndsWith(".png.meta") || p.EndsWith(".jpg.meta") || p.EndsWith(".tga.meta") || p.EndsWith(".psd.meta"))
             .ToArray();
 
-        foreach (var metaPath in texturePaths)
+        foreach (string metaPath in textureMetaPaths)
         {
-            string[] lines = File.ReadAllLines(metaPath);
-            foreach (var line in lines)
+            string guid = null;
+            foreach (string line in File.ReadLines(metaPath))
             {
                 if (line.StartsWith("guid: "))
                 {
-                    allTextureMetaGUIDs.Add(line.Substring(6).Trim());
+                    guid = line.Substring(6).Trim();
                     break;
                 }
             }
+
+            if (!string.IsNullOrEmpty(guid))
+            {
+                string assetPath = metaPath.Replace(".meta", "");
+                guidToPath[guid] = assetPath;
+            }
         }
 
-        // 2. Scan all materials for texture GUIDs
+        // 2. Find all materials and check for texture GUIDs
+        int reassignedCount = 0;
         string[] materialPaths = Directory.GetFiles("Assets", "*.mat", SearchOption.AllDirectories);
-        var missingGUIDs = new Dictionary<string, string>(); // guid => material
 
         foreach (string matPath in materialPaths)
         {
-            string[] lines = File.ReadAllLines(matPath);
-            foreach (string line in lines)
+            string[] matLines = File.ReadAllLines(matPath);
+            foreach (string line in matLines)
             {
                 if (line.Trim().StartsWith("guid: "))
                 {
                     string guid = line.Trim().Substring(6).Trim();
-                    if (!allTextureMetaGUIDs.Contains(guid))
+
+                    if (guidToPath.TryGetValue(guid, out string texPath))
                     {
-                        if (!missingGUIDs.ContainsKey(guid))
-                            missingGUIDs[guid] = matPath;
+                        // Load both material and texture
+                        Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath.Replace(Application.dataPath, "Assets"));
+                        Texture tex = AssetDatabase.LoadAssetAtPath<Texture>(texPath);
+
+                        if (mat != null && tex != null)
+                        {
+                            // Assign texture to main property slot
+                            if (mat.HasProperty("_BaseMap"))
+                                mat.SetTexture("_BaseMap", tex);
+                            else if (mat.HasProperty("_MainTex"))
+                                mat.SetTexture("_MainTex", tex);
+
+                            EditorUtility.SetDirty(mat);
+                            reassignedCount++;
+                            Debug.Log($"🔄 Reassigned texture to material: {mat.name} → {Path.GetFileName(texPath)}");
+                        }
                     }
                 }
             }
         }
 
-        // 3. Report results
-        if (missingGUIDs.Count == 0)
-        {
-            Debug.Log("✅ All texture GUIDs referenced by materials are valid.");
-        }
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+
+        if (reassignedCount == 0)
+            Debug.Log("✅ No missing assignments detected — all materials already linked.");
         else
-        {
-            Debug.LogWarning($"⚠️ {missingGUIDs.Count} missing texture GUID(s) found in materials:");
-            foreach (var kv in missingGUIDs)
-            {
-                Debug.LogWarning($"Missing GUID: {kv.Key} in material: {kv.Value}");
-            }
-        }
+            Debug.Log($"✅ Reassigned {reassignedCount} textures to materials automatically.");
     }
 }
