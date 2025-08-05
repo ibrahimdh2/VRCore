@@ -16,10 +16,6 @@ public class WaypointMovement : MonoBehaviour
 
 
     public float yPos;
-    [SerializeField] private float tiltIntensity;
-    [SerializeField] private float tiltSpeed;
-    [SerializeField] private SpeedReceiver receiver;
-    [SerializeField] private TextMeshProUGUI speedText;
 
     private void Start()
     {
@@ -44,8 +40,7 @@ public class WaypointMovement : MonoBehaviour
     {
 
         Vector3 wayPointPosVec = new Vector3(wayPoints[wayPointIndex].transform.position.x, transform.position.y, wayPoints[wayPointIndex].transform.position.z);
-        moveSpeed = receiver.speedKph;
-        speedText.text = $"{receiver.speedKph}/kmH";
+        
 
         if (transform.position == wayPointPosVec)
         {
@@ -109,18 +104,14 @@ public class WaypointMovement : MonoBehaviour
             Vector3 crossProduct = Vector3.Cross(currentForward, targetForward);
             float tiltDirection = (crossProduct.y > 0) ? -1f : 1f;
 
-            // Apply tilt based on the angle difference and intensity factor
-            float tiltAmount = angleDifference * tiltDirection * tiltIntensity; // tiltIntensity is a control variable
 
             // Smoothly interpolate the Z-axis tilt
-            float targetTilt = Mathf.LerpAngle(transform.eulerAngles.z, tiltAmount, tiltSpeed * Time.deltaTime);
 
             // Smoothly interpolate the rotation
             Quaternion smoothRotation = Quaternion.Slerp(transform.rotation, targetRotation, rotateSpeed * Time.deltaTime);
 
             // Apply the smooth rotation and tilt (keeping the Z-axis tilt)
             Vector3 smoothEulerAngles = smoothRotation.eulerAngles;
-            smoothEulerAngles.z = targetTilt;
 
             // Apply the final rotation and position update
             transform.rotation = Quaternion.Euler(smoothEulerAngles);
