@@ -217,6 +217,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 8040086593186779743}
   - {fileID: 6588754693946946919}
@@ -308,6 +309,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5969514684849760891}
   - {fileID: 8308356561118744680}
@@ -359,7 +361,7 @@ GameObject:
   - component: {fileID: 57006434}
   m_Layer: 0
   m_Name: Signal Stopper
-  m_TagString: Untagged
+  m_TagString: Stopper
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -474,8 +476,8 @@ Transform:
   m_GameObject: {fileID: 57006428}
   serializedVersion: 2
   m_LocalRotation: {x: 0.000000015454313, y: 0.70710677, z: -0.000000015454312, w: 0.7071068}
-  m_LocalPosition: {x: 212.84795, y: 1.9398582, z: 52.176598}
-  m_LocalScale: {x: 26.331701, y: 3.254582, z: 15.974612}
+  m_LocalPosition: {x: 212.84795, y: 1.9399, z: 47.3428}
+  m_LocalScale: {x: 16.665333, y: 3.254582, z: 15.974612}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -492,6 +494,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bda057578169ee4a95f990833086a05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  trafficLight: {fileID: 840203630}
 --- !u!114 &62141609
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -504,6 +507,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5318708563880146463}
   - {fileID: 5626090702799773451}
@@ -1400,6 +1404,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 7543085631200436486}
   - {fileID: 5949892965522962337}
@@ -1669,6 +1674,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5329484525381536382}
   - {fileID: 1462973322844804345}
@@ -1829,6 +1835,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 900578582}
   - {fileID: 8226913502153765157}
@@ -2745,6 +2752,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 2075211367658356989}
   - {fileID: 6735784258107215815}
@@ -5631,6 +5639,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 3961071588187979962}
   - {fileID: 8207333855299725733}
@@ -5827,6 +5836,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4289582300306520469}
   - {fileID: 6791623036531018365}
@@ -5983,7 +5993,7 @@ GameObject:
   - component: {fileID: 460414835}
   m_Layer: 0
   m_Name: Signal Stopper
-  m_TagString: Untagged
+  m_TagString: Stopper
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6098,8 +6108,8 @@ Transform:
   m_GameObject: {fileID: 460414829}
   serializedVersion: 2
   m_LocalRotation: {x: -1.3218227e-10, y: 0.99998176, z: -0.000000021855309, w: -0.006048441}
-  m_LocalPosition: {x: 235.94794, y: 1.9398572, z: 28.276588}
-  m_LocalScale: {x: 26.331709, y: 3.254582, z: 15.974616}
+  m_LocalPosition: {x: 243.006, y: 1.9398572, z: 28.276588}
+  m_LocalScale: {x: 12.317973, y: 3.254582, z: 15.974616}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -6116,6 +6126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bda057578169ee4a95f990833086a05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  trafficLight: {fileID: 851334258}
 --- !u!1 &461962993
 GameObject:
   m_ObjectHideFlags: 0
@@ -6293,7 +6304,7 @@ GameObject:
   - component: {fileID: 484716146}
   m_Layer: 0
   m_Name: Signal Stopper
-  m_TagString: Untagged
+  m_TagString: Stopper
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6408,8 +6419,8 @@ Transform:
   m_GameObject: {fileID: 484716140}
   serializedVersion: 2
   m_LocalRotation: {x: 0.000000015454313, y: 0.70710677, z: -0.000000015454312, w: 0.7071068}
-  m_LocalPosition: {x: 257.84793, y: 1.9398563, z: 52.176582}
-  m_LocalScale: {x: 26.331701, y: 3.254582, z: 15.974612}
+  m_LocalPosition: {x: 267.4622, y: 1.9399, z: 58.994}
+  m_LocalScale: {x: 12.697146, y: 3.254582, z: 12.202826}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -6426,6 +6437,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bda057578169ee4a95f990833086a05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  trafficLight: {fileID: 1057400162}
 --- !u!1 &484740190
 GameObject:
   m_ObjectHideFlags: 0
@@ -7059,6 +7071,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 144430072899472624}
   - {fileID: 5663622917691449353}
@@ -7075,6 +7088,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 330050694}
   - {fileID: 6247025972645584675}
@@ -9158,6 +9172,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 559225614453503547}
   - {fileID: 7297603284007679287}
@@ -9465,6 +9480,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5085342095972052426}
   - {fileID: 4506890794887615914}
@@ -9481,6 +9497,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 7696030991417112586}
   - {fileID: 111555872339037917}
@@ -11257,6 +11274,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 0}
   - {fileID: 0}
@@ -11477,6 +11495,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 3571211931507384682}
   - {fileID: 5772116676281889614}
@@ -11493,6 +11512,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 8145153841402385925}
   - {fileID: 7649038459060405702}
@@ -11509,6 +11529,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4175389060451886652}
   - {fileID: 1342391973245248557}
@@ -11902,6 +11923,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4805244526192093468}
   - {fileID: 2485278355897766985}
@@ -11918,6 +11940,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4284601011799647699}
   - {fileID: 6217027487148363573}
@@ -12572,6 +12595,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 142826599209223664}
   - {fileID: 1532233588155112896}
@@ -13267,6 +13291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4874594350500697834}
   - {fileID: 2444010628149413654}
@@ -14422,6 +14447,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 125007902529435675}
   - {fileID: 7021557328790619411}
@@ -14894,6 +14920,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 1909881758398933918}
   - {fileID: 4892264408516852388}
@@ -15961,6 +15988,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 6047060384588499987}
   - {fileID: 3332747114114948108}
@@ -16453,6 +16481,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5213665853822070616}
   - {fileID: 3282846144467268388}
@@ -16638,6 +16667,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4902397774304637223}
   - {fileID: 498601305125199287}
@@ -16884,6 +16914,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 7727617879041241129}
   - {fileID: 6027222958557794862}
@@ -16986,6 +17017,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5373923292181992954}
   - {fileID: 3979305574907822458}
@@ -17604,6 +17636,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 1606759903155959975}
   - {fileID: 1606759903155959975}
@@ -18033,6 +18066,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 1864306099351148595}
   - {fileID: 3003227599913355018}
@@ -18265,6 +18299,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 2572074846809891865}
   - {fileID: 6101420715531530975}
@@ -19075,6 +19110,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 861672577527949929}
   - {fileID: 8853850353003196384}
@@ -20835,6 +20871,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4656772308413640078}
   - {fileID: 5031584813300357359}
@@ -20882,6 +20919,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 87009538564907886}
   - {fileID: 1487317285606076471}
@@ -21095,7 +21133,7 @@ GameObject:
   - component: {fileID: 1645577143}
   m_Layer: 0
   m_Name: Signal Stopper
-  m_TagString: Untagged
+  m_TagString: Stopper
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -21210,8 +21248,8 @@ Transform:
   m_GameObject: {fileID: 1645577137}
   serializedVersion: 2
   m_LocalRotation: {x: -1.3218227e-10, y: 0.99998176, z: -0.000000021855309, w: -0.006048441}
-  m_LocalPosition: {x: 235.94794, y: 1.9398572, z: 75.27659}
-  m_LocalScale: {x: 26.331709, y: 3.254582, z: 15.974616}
+  m_LocalPosition: {x: 228.6505, y: 1.9398572, z: 75.27659}
+  m_LocalScale: {x: 11.84137, y: 3.254582, z: 15.974616}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -21228,6 +21266,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bda057578169ee4a95f990833086a05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  trafficLight: {fileID: 167596813}
 --- !u!1 &1659581576
 GameObject:
   m_ObjectHideFlags: 0
@@ -21542,6 +21581,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4059335254998973517}
   - {fileID: 5377897247392465626}
@@ -21874,6 +21914,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4757886483683446032}
   - {fileID: 5592590608476135612}
@@ -22464,6 +22505,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 6283536029248160158}
   - {fileID: 4013973162624352833}
@@ -23940,6 +23982,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 3156603567565631185}
   - {fileID: 1816242535233541705}
@@ -24953,6 +24996,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 3086999165879246942}
   - {fileID: 7322965869642042976}
@@ -24969,6 +25013,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 754029866920689218}
   - {fileID: 8868899590362374149}
@@ -25551,6 +25596,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 511786378923564147}
   - {fileID: 5340809094223123727}
@@ -26091,6 +26137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4353137627195651608}
   - {fileID: 7894626135379750139}
@@ -26422,6 +26469,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 4686164705913205006}
   - {fileID: 4525136627590977980}
@@ -26833,6 +26881,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 547094796481362209}
   - {fileID: 547094796481362209}
@@ -27172,6 +27221,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 787521732405777361}
   - {fileID: 60031783583961764}
@@ -53042,6 +53092,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5824002247090520402}
   - {fileID: 4279553652417771445}
@@ -84517,6 +84568,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5073633203716001708}
   - {fileID: 6651504859177796409}
@@ -87646,6 +87698,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 7937476301930077533}
   - {fileID: 3151730894023508461}
@@ -93891,6 +93944,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5550882126800618238}
   - {fileID: 5563896558395164999}
@@ -110025,6 +110079,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 900578582}
   - {fileID: 8226913502153765157}
@@ -111939,6 +111994,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 714586767235756558}
   - {fileID: 5279705060723969734}
@@ -112594,6 +112650,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 8409058567578223697}
   - {fileID: 3937965315442434916}
@@ -115859,6 +115916,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 7089316842275346989}
   - {fileID: 162427099069409031}
@@ -116824,6 +116882,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0b79866c5190c447b689b724eb05ade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLightState: 0
   lightObject:
   - {fileID: 5813961489821643344}
   - {fileID: 421557123118753248}

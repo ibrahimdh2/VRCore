@@ -4,6 +4,7 @@ using static TrafficLight;
 public  enum LightState { Red, Yellow, Green };
 public class TrafficLight : MonoBehaviour
 {
+    [SerializeField] private LightState testLightState;
     private LightState state;
     public LightState State
     {
@@ -32,14 +33,21 @@ public class TrafficLight : MonoBehaviour
             GameObject light = lightObject[i];
             if (i != (int) State)
             {
-                lightObject[i].SetActive(false);    
+                lightObject[i].SetActive(true);    
             }
             else
             {
-                lightObject[i].SetActive(true);
+                lightObject[i].SetActive(false);
             }
         }
 
        
+    }
+
+    [ContextMenu("ChangeLightState")]
+    public void ChangeStateToTestLightState()
+    {
+        
+        ChangeState(testLightState);
     }
 }

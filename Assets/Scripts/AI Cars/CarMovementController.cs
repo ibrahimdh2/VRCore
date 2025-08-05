@@ -5,7 +5,7 @@ public class CarMovementController : MonoBehaviour
 {
     public float moveSpeed = 5f;
     public float rotateSpeed = 5f;
-    public float maxSteerAngle = 30f; // Maximum steering angle for front wheels
+    public float maxSteerAngle = 30f;
 
     [Header("Wheel Transforms")]
     public Transform frontLeftWheel;
@@ -16,9 +16,10 @@ public class CarMovementController : MonoBehaviour
     private Transform[] waypoints;
     private int currentIndex = 0;
 
-    // To cache original local rotations of the front wheels
     private Quaternion frontLeftOriginalRotation;
     private Quaternion frontRightOriginalRotation;
+    public float raycastLength;
+    [SerializeField]private bool isPaused = false;
 
     private void Awake()
     {
@@ -34,6 +35,16 @@ public class CarMovementController : MonoBehaviour
         StartCoroutine(MoveRoutine());
     }
 
+    public void Pause()
+    {
+        isPaused = true;
+    }
+
+    public void Resume()
+    {
+        isPaused = false;
+    }
+
     IEnumerator MoveRoutine()
     {
         while (currentIndex < waypoints.Length)
@@ -42,23 +53,47 @@ public class CarMovementController : MonoBehaviour
 
             while (Vector3.Distance(transform.position, targetPos) > 0.1f)
             {
-                Vector3 direction = (targetPos - transform.position).normalized;
-                direction.y = 0;
+                // Cast a ray in front
+                if (Physics.Raycast(transform.position + Vector3.up * 0.5f, transform.forward, out RaycastHit hit, raycastLength))
+                {
+                    // Ignore self or any children
+                    if (hit.collider.CompareTag("Vehicle"))
+                    {
+                        isPaused = true;
+                    }
+                    else
+                    {
+                        isPaused = false;
+                    }
+                }
+                else
+                {
+                    if ((signal != null && signal.State == LightState.Red))
+                    {
+                        isPaused = true;
+                    }
+                    else
+                    {
 
-                // Calculate target rotation and steer angle
-                Quaternion targetRotation = Quaternion.LookRotation(direction);
-                float steerAngle = Vector3.SignedAngle(transform.forward, direction, Vector3.up);
-                steerAngle = Mathf.Clamp(steerAngle, -maxSteerAngle, maxSteerAngle);
+                        isPaused = false;
+                    }
+                }
 
-                // Smoothly rotate car body
-                transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, rotateSpeed * Time.deltaTime);
+                if (!isPaused)
+                {
+                    Vector3 direction = (targetPos - transform.position).normalized;
+                    direction.y = 0;
 
-                // Move forward
-                transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
+                    Quaternion targetRotation = Quaternion.LookRotation(direction);
+                    float steerAngle = Vector3.SignedAngle(transform.forward, direction, Vector3.up);
+                    steerAngle = Mathf.Clamp(steerAngle, -maxSteerAngle, maxSteerAngle);
 
-                // Rotate wheels visually
-                float rotationAmount = moveSpeed * 360f * Time.deltaTime;
-                RotateWheels(rotationAmount, steerAngle);
+                    transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, rotateSpeed * Time.deltaTime);
+                    transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
+
+                    float rotationAmount = moveSpeed * 360f * Time.deltaTime;
+                    RotateWheels(rotationAmount, steerAngle);
+                }
 
                 yield return null;
             }
@@ -67,17 +102,39 @@ public class CarMovementController : MonoBehaviour
             yield return null;
         }
 
-        // Return to pool when done
         VehiclePoolManager.Instance.ReturnCar(gameObject);
+    }
+
+    public TrafficLight signal = null;
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log("Signal Set");
+        if (other.CompareTag("Stopper"))
+        {
+            if (signal == null)
+            {
+                if (other.gameObject.TryGetComponent<TrafficLightStopper>(out TrafficLightStopper stopper))
+                {
+                    signal = stopper.trafficLight;
+                }
+            }
+
+            
+        }
+    }
+    
+
+    private void OnTriggerExit(Collider other)
+    {
+        signal = null;
     }
 
     void RotateWheels(float rotationAmount, float steerAngle)
     {
-        // Rotate rear wheels (no steering)
         rearLeftWheel?.Rotate(Vector3.right, -rotationAmount);
         rearRightWheel?.Rotate(Vector3.right, -rotationAmount);
 
-        // Rotate front wheels (steering + rolling)
         if (frontLeftWheel != null)
         {
             frontLeftWheel.localRotation = frontLeftOriginalRotation * Quaternion.Euler(0, steerAngle, 0);
@@ -89,5 +146,12 @@ public class CarMovementController : MonoBehaviour
             frontRightWheel.localRotation = frontRightOriginalRotation * Quaternion.Euler(0, steerAngle, 0);
             frontRightWheel.Rotate(Vector3.right, -rotationAmount);
         }
+    }
+
+    // Optional: visualize the ray in the editor
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position + Vector3.up * 0.5f, transform.position + Vector3.up * 0.5f + transform.forward * raycastLength);
     }
 }

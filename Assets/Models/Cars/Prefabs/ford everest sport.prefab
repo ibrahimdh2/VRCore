@@ -136,7 +136,7 @@ GameObject:
   - component: {fileID: 7486566301495494935}
   m_Layer: 0
   m_Name: ford everest sport
-  m_TagString: Untagged
+  m_TagString: Vehicle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -180,6 +180,7 @@ MonoBehaviour:
   frontRightWheel: {fileID: 4237395836265325986}
   rearLeftWheel: {fileID: 5795813667901119589}
   rearRightWheel: {fileID: 2636112127416176295}
+  raycastLength: 10
 --- !u!65 &5760763399105170551
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -199,8 +200,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.2382817, y: 1, z: 5.5659943}
-  m_Center: {x: -0.15776658, y: 0, z: 0.034716927}
+  m_Size: {x: 2.000454, y: 1.6662052, z: 1.020201}
+  m_Center: {x: -0.038852297, y: 0.8503485, z: -2.238181}
 --- !u!54 &7486566301495494935
 Rigidbody:
   m_ObjectHideFlags: 0
