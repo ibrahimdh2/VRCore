@@ -1,16 +1,16 @@
 using UnityEngine;
+using System.Collections.Generic;
 
+[ExecuteInEditMode]
 public class TrafficLightsSyncher : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    //public List<TrafficLight> forwardOrRight;
+    //public List<TrafficLight> forwardOnly;
+    //public List<TrafficLight> leftOrBack;
+    
+    //public void ChangeSignals(LightState state)
+    //{
+       
+    //}
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

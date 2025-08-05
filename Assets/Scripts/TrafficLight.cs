@@ -1,8 +1,9 @@
 using UnityEngine;
+using static TrafficLight;
 
+public  enum LightState { Red, Yellow, Green };
 public class TrafficLight : MonoBehaviour
 {
-    public enum LightState { Red, Yellow, Green };
     private LightState state;
     public LightState State
     {
@@ -18,15 +19,6 @@ public class TrafficLight : MonoBehaviour
         }
     }
     public GameObject[] lightObject = new GameObject[3];
-    void Start()
-    {
-        
-    }
-
-    void Update()
-    {
-        
-    }
     public void ChangeState(LightState state)
     {
         State = state;
