@@ -13,13 +13,14 @@ public class CarMovementController : MonoBehaviour
     public Transform rearLeftWheel;
     public Transform rearRightWheel;
 
-    private Transform[] waypoints;
+    [SerializeField ]private Transform[] waypoints;
     private int currentIndex = 0;
 
     private Quaternion frontLeftOriginalRotation;
     private Quaternion frontRightOriginalRotation;
     public float raycastLength;
     [SerializeField]private bool isPaused = false;
+    public Vector3 halfExtents;
 
     private void Awake()
     {
@@ -53,8 +54,12 @@ public class CarMovementController : MonoBehaviour
 
             while (Vector3.Distance(transform.position, targetPos) > 0.1f)
             {
-                // Cast a ray in front
-                if (Physics.Raycast(transform.position + Vector3.up * 0.5f, transform.forward, out RaycastHit hit, raycastLength))
+                Vector3 boxCenter = transform.position + Vector3.up * 0.5f;
+        
+                Quaternion orientation = transform.rotation;
+
+                if (Physics.BoxCast(boxCenter, halfExtents, transform.forward, out RaycastHit hit, orientation, raycastLength))
+
                 {
                     // Ignore self or any children
                     if (hit.collider.CompareTag("Vehicle"))
@@ -68,7 +73,7 @@ public class CarMovementController : MonoBehaviour
                 }
                 else
                 {
-                    if ((signal != null && signal.State == LightState.Red))
+                    if ((signal != null && signal.State != LightState.Green))
                     {
                         isPaused = true;
                     }
@@ -152,6 +157,13 @@ public class CarMovementController : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawLine(transform.position + Vector3.up * 0.5f, transform.position + Vector3.up * 0.5f + transform.forward * raycastLength);
+
+        Vector3 boxCenter = transform.position + Vector3.up * 0.5f;
+        Quaternion orientation = transform.rotation;
+
+        Matrix4x4 rotationMatrix = Matrix4x4.TRS(boxCenter + transform.forward * raycastLength * 0.5f, orientation, Vector3.one);
+        Gizmos.matrix = rotationMatrix;
+        Gizmos.DrawWireCube(Vector3.zero, halfExtents * 2 + new Vector3(0, 0, raycastLength));
     }
+
 }

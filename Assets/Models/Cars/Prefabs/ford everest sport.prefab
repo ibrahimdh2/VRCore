@@ -181,6 +181,9 @@ MonoBehaviour:
   rearLeftWheel: {fileID: 5795813667901119589}
   rearRightWheel: {fileID: 2636112127416176295}
   raycastLength: 10
+  isPaused: 0
+  halfExtents: {x: 1, y: 0.5, z: 1}
+  signal: {fileID: 0}
 --- !u!65 &5760763399105170551
 BoxCollider:
   m_ObjectHideFlags: 0
