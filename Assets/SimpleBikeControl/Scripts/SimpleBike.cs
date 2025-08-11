@@ -71,6 +71,11 @@ namespace KikiNgao.SimpleBikeControl
         private float _prevWrappedYaw;   // last [-180..180] sample
         private float _unwrappedYaw;     // accumulated continuous yaw
         private bool _havePrevYaw;
+        [Header("Speed-based steering")]
+        public bool fasterTheSpeedSlowerTheTurn = true;
+
+        
+
 
         private void Awake()
         {
@@ -169,16 +174,26 @@ namespace KikiNgao.SimpleBikeControl
 
             // 3) Apply trim/deadzone/sensitivity on the continuous value
             float raw = (_unwrappedYaw - straightAngle) * turnSensitivity;
+
+            // Apply speed-based reduction if enabled
+            if (fasterTheSpeedSlowerTheTurn && frontWheelRestrictCurve != null)
+            {
+                float speedKph = smoothedSpeed; // already smoothed in FixedUpdate
+                float factor = Mathf.Clamp01(frontWheelRestrictCurve.Evaluate(speedKph));
+                raw *= factor;
+            }
+
+            // Deadzone
             if (Mathf.Abs(raw) <= deadzoneDegrees) raw = 0f;
 
             // 4) Mechanical limits and apply
             float finalAngle = Mathf.Clamp(raw, -maxTurnAngle, maxTurnAngle);
-            calculatedTurnAngle = wrappedYawDeg; // telemetry (wrapped sample if you want to display it)
-
+            calculatedTurnAngle = raw; // or keep wrappedYaw if you prefer
             frontWheelCollider.steerAngle = finalAngle;
 
             if (handlerBar) handlerBar.localRotation = Quaternion.Euler(0f, finalAngle, 0f);
             if (handlebarAssembly) handlebarAssembly.localRotation = Quaternion.Euler(0f, finalAngle, 0f);
+
         }
 
         private void Rest()

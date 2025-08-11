@@ -17,6 +17,7 @@ public class ControllerSettings : MonoBehaviour
     [SerializeField] private InputAction settingsMenuInput;
     [SerializeField] private TextMeshProUGUI delayUI;
     [SerializeField] private Slider dataDelaySlider;
+    [SerializeField] private Toggle theToggle;
     
 
     [SerializeField] private DataManager dataManager;
@@ -60,12 +61,16 @@ public class ControllerSettings : MonoBehaviour
     public void LoadSettings()
     {
         Debug.Log("Settings Loaded");
-       senstivitySlider.value = bikeController.turnSensitivity = PlayerPrefs.GetFloat("TurnSensitivity", 1);
+       senstivitySlider.value = bikeController.turnSensitivity = PlayerPrefs.GetFloat("TurnSensitivity", 0.1485f);
         turnSensitivityText.text = senstivitySlider.value.ToString("f2");
        // turnDeadZone.value = bikeController.turnDeadZone = PlayerPrefs.GetFloat("TurnDeadzone", 3);
         bikeController.straightAngle = PlayerPrefs.GetFloat("StraightAngle", 0);
         dataDelaySlider.value =  dataManager.delay = PlayerPrefs.GetFloat("Delay", 5);
         delayUI.text = dataManager.delay.ToString("f2");
+        bool fastThe = PlayerPrefs.GetInt("FasterTheSpeedSlowerTheTurn", 1) == 1 ? true : false;
+        bikeController.fasterTheSpeedSlowerTheTurn =  fastThe;
+        theToggle.isOn = fastThe;
+
 
     }
     public void SaveSettings()
@@ -74,6 +79,7 @@ public class ControllerSettings : MonoBehaviour
         PlayerPrefs.SetFloat("TurnSensitivity", senstivitySlider.value);
         PlayerPrefs.SetFloat("StraightAngle", bikeController.straightAngle);
         PlayerPrefs.SetFloat("Delay", dataManager.delay);
+        PlayerPrefs.SetInt("FasterTheSpeedSlowerTheTurn", Convert.ToInt32(bikeController.fasterTheSpeedSlowerTheTurn));
 
 
     }
@@ -111,5 +117,10 @@ public class ControllerSettings : MonoBehaviour
     {
         dataManager.delay = v;
         delayUI.text = v.ToString("f4");
+    }
+    public void SetFasterTheSpeedSlowerTheTurn(bool isOn)
+    {
+        bikeController.fasterTheSpeedSlowerTheTurn = isOn;
+
     }
 }
