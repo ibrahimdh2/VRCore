@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Specialized;
 using System.IO;
+using UnityEngine.InputSystem;
 
 public class DataManager : MonoBehaviour
 {
@@ -12,6 +13,26 @@ public class DataManager : MonoBehaviour
     private float lastRecordedTime;
     public float delay = 1f;
     public bool startRecording;
+
+    [SerializeField] private InputAction startRecord;
+    [SerializeField] private GameObject recordingCanvas;
+
+    private void OnEnable()
+    {
+        startRecord.performed += StartStopRecording;
+        startRecord.Enable();
+        
+    }
+    private void OnDisable()
+    {
+        startRecord.performed -= StartStopRecording;
+        startRecord.Disable();
+    }
+
+    public void StartStopRecording(InputAction.CallbackContext context)
+    {
+        StartStopRecording();
+    }
 
     public void StartRecording()
     {
@@ -28,10 +49,12 @@ public class DataManager : MonoBehaviour
     {
         if(startRecording)
         {
+            recordingCanvas.SetActive(false);
             StopRecording();
         }
         else
         {
+            recordingCanvas.SetActive(true);
             StartRecording();
         }
     }

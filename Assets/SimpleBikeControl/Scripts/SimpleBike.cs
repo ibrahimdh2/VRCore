@@ -15,45 +15,73 @@ namespace KikiNgao.SimpleBikeControl
         public WheelCollider rearWheelCollider;
         public GameObject frontWheel;
         public GameObject rearWheel;
-        public Transform handlerBar;
+        public Transform handlerBar;              // visual bar
         public Transform cranksetTransform;
 
+        [Header("Physics")]
         [SerializeField] private float legPower = 10;
         [SerializeField] private float airResistance = 6;
-        [SerializeField] private float turningSmooth = .8f;
         [SerializeField] private float restDrag = 2f;
         [SerializeField] private float restAngularDrag = .2f;
         [SerializeField] private float forceRatio = 2f;
-        [SerializeField] private AnimationCurve frontWheelRestrictCurve = new AnimationCurve(new Keyframe(0f, 35f), new Keyframe(50f, 1f));
+        [SerializeField]
+        private AnimationCurve frontWheelRestrictCurve =
+            new AnimationCurve(new Keyframe(0f, 35f), new Keyframe(50f, 1f));
 
         private Transform centerOfMass;
         private Rigidbody m_Rigidbody;
 
         public Rigidbody GetRigidbody() => m_Rigidbody;
 
+        [Header("VR Inputs (mounted to the real handlebar)")]
         public Transform leftController;
         public Transform rightController;
 
-        private float temporaryFrontWheelAngle;
-        private float handlerBarYLastAngle;
-        private float rollingResistanceCoefficient;
+        [Header("Speed/Debug UI")]
+        [SerializeField] private SpeedReceiver speedReceiver;
+        [SerializeField] private TextMeshProUGUI sensorSpeedUI;
+        [SerializeField] private TextMeshProUGUI currentSpeedUI;
+
+        [Header("Steering (1:1 mapping)")]
+        [Tooltip("If true, the wheel steer angle equals the handlebar angle exactly.")]
+        public bool oneToOneSteer = true;
+
+        [Tooltip("Maximum allowed steer in degrees (hard mechanical stop).")]
+        public float maxTurnAngle = 85f;
+
+        [Tooltip("Neutral trim if your real rig’s straight-ahead isn’t exactly 0°.")]
+        public float straightAngle = 0f;
+
+        [Tooltip("Ignore tiny jitter in degrees; set 0 for absolute 1:1.")]
+        public float deadzoneDegrees = 0.5f;
+
+        [Tooltip("Legacy, unused (kept for inspector back-compat).")]
+        public float turnDeadZone = 0f;
+
+        // Telemetry
+        public float calculatedTurnAngle;
 
         public bool Freeze { get => m_Rigidbody.isKinematic; set => m_Rigidbody.isKinematic = value; }
         public bool FreezeCrankset { get; set; }
 
-        [SerializeField] private SpeedReceiver speedReceiver;
-        [SerializeField] private TextMeshProUGUI sensorSpeedUI;
-        [SerializeField] private TextMeshProUGUI currentSpeedUI;
-        [SerializeField] private float turnSensitivity;
-        [SerializeField] private int maxTurnAngle;
-
         private float smoothedSpeed;
+        public float turnSensitivity = 1;
+
+        // ==== NEW: steering unwrap state ====
+        private float _prevWrappedYaw;   // last [-180..180] sample
+        private float _unwrappedYaw;     // accumulated continuous yaw
+        private bool _havePrevYaw;
+
+        private void Awake()
+        {
+            // Migrate legacy field if set
+            if (turnDeadZone > 0f) deadzoneDegrees = turnDeadZone;
+        }
 
         void Start()
         {
             CreateCenterOfMass();
             SettingRigidbody();
-            rollingResistanceCoefficient = m_Rigidbody.mass * 9.81f;
             Freeze = true;
         }
 
@@ -61,8 +89,8 @@ namespace KikiNgao.SimpleBikeControl
         {
             centerOfMass = new GameObject("CenterOfMass").transform;
             Vector3 center = rearWheelCollider.transform.position;
-            center.z += (frontWheelCollider.transform.position.z - center.z) / 2;
-            center.y = 0;
+            center.z += (frontWheelCollider.transform.position.z - center.z) / 2f;
+            center.y = 0f;
             centerOfMass.position = center;
             centerOfMass.parent = transform;
         }
@@ -77,29 +105,29 @@ namespace KikiNgao.SimpleBikeControl
         {
             if (!ReadyToRide()) return;
 
-            // Smooth the target speed (optional)
-            float targetSpeed = speedReceiver.speedKph;
+            // Smooth the reported speed a touch (optional)
+            float targetSpeed = speedReceiver != null ? speedReceiver.speedKph : 0f;
             smoothedSpeed = Mathf.Lerp(smoothedSpeed, targetSpeed, 0.1f);
 
-            // Apply velocity directly
+            // Drive rigidbody forward at target speed (m/s)
             float targetSpeedMS = smoothedSpeed / 3.6f;
             m_Rigidbody.linearVelocity = transform.forward * targetSpeedMS;
 
-            // Debug / UI
-            if (sensorSpeedUI != null)
-            {
-                sensorSpeedUI.text = $"s: {speedReceiver.speedKph:F1} KPH";
-                currentSpeedUI.text = $"c: {m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH";
-            }
+            // UI
+            if (sensorSpeedUI) sensorSpeedUI.text = $"s: {targetSpeed:F1} KPH";
+            if (currentSpeedUI) currentSpeedUI.text = $"c: {m_Rigidbody.linearVelocity.magnitude * 3.6f:F1} KPH";
 
             if (IsRest()) Rest();
             else if (IsMoving()) MovingBike();
 
-            if (IsTurning() || (leftController && rightController)) TurningBike();
+            // === CHANGED: steering now uses unwrapped yaw ===
+            if (leftController && rightController) TurningBike();
+            else _havePrevYaw = false; // lost controllers → reset unwrap state
 
             if (!FreezeCrankset) UpdateCranksetRotation();
             UpdateWheelDisplay();
 
+            // Keep upright in Z (as in your original)
             transform.rotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y, 0f);
         }
 
@@ -116,28 +144,41 @@ namespace KikiNgao.SimpleBikeControl
             UpdateCenterOfMass();
         }
 
+        // === REPLACED: continuous steering with unwrap ===
         private void TurningBike()
         {
-            temporaryFrontWheelAngle = frontWheelRestrictCurve.Evaluate(GetBikeSpeedKm());
+            if (!leftController || !rightController) return;
 
-            float inputAngle = 0f;
-            if (leftController != null && rightController != null)
+            // 1) Read wrapped yaw in [-180..180]
+            if (!TryGetHandlebarYawWrapped(out float wrappedYawDeg))
             {
-                inputAngle = CalculateHandlebarAngle() / maxTurnAngle;
+                _havePrevYaw = false;
+                return;
             }
 
-            float nextAngle = temporaryFrontWheelAngle * inputAngle * turnSensitivity;
-            frontWheelCollider.steerAngle = nextAngle;
-
-            Quaternion handlerBarLocalRotation = Quaternion.Euler(0, nextAngle - handlerBarYLastAngle, 0);
-            handlerBar.rotation = Quaternion.Lerp(handlerBar.rotation, handlerBar.rotation * handlerBarLocalRotation, turningSmooth);
-            handlerBarYLastAngle = nextAngle;
-
-            if (handlebarAssembly != null)
+            // 2) Unwrap to make it continuous (no jumps at ±180)
+            if (!_havePrevYaw)
             {
-                Quaternion targetRotation = Quaternion.Euler(0, nextAngle, 0);
-                handlebarAssembly.localRotation = Quaternion.Lerp(handlebarAssembly.localRotation , targetRotation, turningSmooth);
+                _prevWrappedYaw = wrappedYawDeg;
+                _unwrappedYaw = 0f;   // start from zero relative to first reading
+                _havePrevYaw = true;
             }
+            float delta = Mathf.DeltaAngle(_prevWrappedYaw, wrappedYawDeg); // smallest signed delta
+            _prevWrappedYaw = wrappedYawDeg;
+            _unwrappedYaw += delta;
+
+            // 3) Apply trim/deadzone/sensitivity on the continuous value
+            float raw = (_unwrappedYaw - straightAngle) * turnSensitivity;
+            if (Mathf.Abs(raw) <= deadzoneDegrees) raw = 0f;
+
+            // 4) Mechanical limits and apply
+            float finalAngle = Mathf.Clamp(raw, -maxTurnAngle, maxTurnAngle);
+            calculatedTurnAngle = wrappedYawDeg; // telemetry (wrapped sample if you want to display it)
+
+            frontWheelCollider.steerAngle = finalAngle;
+
+            if (handlerBar) handlerBar.localRotation = Quaternion.Euler(0f, finalAngle, 0f);
+            if (handlebarAssembly) handlebarAssembly.localRotation = Quaternion.Euler(0f, finalAngle, 0f);
         }
 
         private void Rest()
@@ -146,6 +187,10 @@ namespace KikiNgao.SimpleBikeControl
             m_Rigidbody.angularDamping = restAngularDrag;
             ResetWheelsCollider();
             UpdateCenterOfMass();
+
+            // Optional: slowly relax unwrap when fully at rest
+            // Keeps state sane if the rider dismounts after many turns
+            if (!_havePrevYaw) _unwrappedYaw = 0f;
         }
 
         private void ResetWheelsCollider()
@@ -159,10 +204,14 @@ namespace KikiNgao.SimpleBikeControl
 
         private void UpdateCranksetRotation()
         {
-            cranksetTransform.rotation *= Quaternion.Euler(GetBikeSpeedKm() / forceRatio, 0, 0);
-            Quaternion ro = Quaternion.Euler(-GetBikeSpeedKm() / forceRatio, 0, 0);
-            cranksetTransform.GetChild(0).rotation *= ro;
-            cranksetTransform.GetChild(1).rotation *= ro;
+            float kmh = GetBikeSpeedKm();
+            cranksetTransform.rotation *= Quaternion.Euler(kmh / forceRatio, 0, 0);
+            Quaternion ro = Quaternion.Euler(-kmh / forceRatio, 0, 0);
+            if (cranksetTransform.childCount >= 2)
+            {
+                cranksetTransform.GetChild(0).rotation *= ro;
+                cranksetTransform.GetChild(1).rotation *= ro;
+            }
         }
 
         private void UpdateWheelDisplay()
@@ -171,8 +220,10 @@ namespace KikiNgao.SimpleBikeControl
             rearWheel.transform.position = pos;
 
             Quaternion rearWheelRot = rearWheel.transform.rotation;
-            rearWheel.transform.rotation = IsReverse() ? rearWheelRot * Quaternion.Euler(-GetBikeSpeedKm(), 0, 0)
-                                                        : rearWheelRot * Quaternion.Euler(GetBikeSpeedKm(), 0, 0);
+            float kmh = GetBikeSpeedKm();
+            rearWheel.transform.rotation = IsReverse()
+                ? rearWheelRot * Quaternion.Euler(-kmh, 0, 0)
+                : rearWheelRot * Quaternion.Euler(kmh, 0, 0);
 
             frontWheel.transform.localRotation = rearWheel.transform.localRotation;
         }
@@ -186,23 +237,33 @@ namespace KikiNgao.SimpleBikeControl
         private float GetBikeSpeedKm() => GetBikeSpeedMs() * 3.6f;
         private float GetBikeSpeedMs() => m_Rigidbody.linearVelocity.magnitude;
 
-        private float CalculateHandlebarAngle()
+        // === REPLACED: stable handlebar yaw (wrapped to [-180..180]) ===
+        /// <summary>
+        /// Returns the handlebar yaw in [-180..180] degrees (wrapped).
+        /// Positive = left turn, Negative = right turn (bike-local space).
+        /// Derived from the perpendicular of the grips line (left→right).
+        /// </summary>
+        private bool TryGetHandlebarYawWrapped(out float angleDeg)
         {
-            if (leftController == null || rightController == null)
-                return 0f;
+            angleDeg = 0f;
+            if (!leftController || !rightController) return false;
 
-            Vector3 leftPos = leftController.position;
-            Vector3 rightPos = rightController.position;
+            // Controller positions in bike-local space, ignore vertical
+            Vector3 leftLocal = transform.InverseTransformPoint(leftController.position);
+            Vector3 rightLocal = transform.InverseTransformPoint(rightController.position);
+            leftLocal.y = 0f; rightLocal.y = 0f;
 
-            Vector3 handlebarVector = rightPos - leftPos;
-            Vector3 localHandlebarVector = transform.InverseTransformDirection(handlebarVector);
-            localHandlebarVector.y = 0;
+            Vector3 barRight = rightLocal - leftLocal;           // grips line (left→right)
+            if (barRight.sqrMagnitude < 1e-6f) return false;     // hands coincide: no reliable reading
 
-            if (localHandlebarVector.magnitude == 0) return 0f;
+            // Perpendicular gives the bar's forward in bike space:
+            // right × up = forward (so straight bar reads +Z)
+            Vector3 barForward = Vector3.Cross(barRight, Vector3.up).normalized;
 
-            float angle = Mathf.Atan2(localHandlebarVector.z, localHandlebarVector.x) * Mathf.Rad2Deg;
-            float handlebarTurnAngle = Mathf.Clamp(angle, -maxTurnAngle, maxTurnAngle);
-            return -handlebarTurnAngle;
+            
+            // Yaw relative to bike forward (Z+)
+            angleDeg = Vector3.SignedAngle(Vector3.forward, barForward, Vector3.up);
+            return true;
         }
 
         public bool ReadyToRide()
@@ -213,9 +274,8 @@ namespace KikiNgao.SimpleBikeControl
         }
 
         public bool IsReverse() => false;
-        public bool IsMovingToward => speedReceiver.speedKph > 0;
-        private bool IsRest() => speedReceiver.speedKph < 0.1f;
-        public bool IsMoving() => speedReceiver.speedKph > 0.1f || m_Rigidbody.linearVelocity.sqrMagnitude > 0.01f;
-        private bool IsTurning() => frontWheelCollider.steerAngle != 0;
+        public bool IsMovingToward => speedReceiver != null && speedReceiver.speedKph > 0;
+        private bool IsRest() => speedReceiver == null || speedReceiver.speedKph < 0.1f;
+        public bool IsMoving() => (speedReceiver != null && speedReceiver.speedKph > 0.1f) || m_Rigidbody.linearVelocity.sqrMagnitude > 0.01f;
     }
 }
