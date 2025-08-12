@@ -25,8 +25,8 @@ namespace KikiNgao.SimpleBikeControl
         [SerializeField] private float restAngularDrag = .2f;
         [SerializeField] private float forceRatio = 2f;
         [SerializeField]
-        private AnimationCurve frontWheelRestrictCurve =
-            new AnimationCurve(new Keyframe(0f, 35f), new Keyframe(50f, 1f));
+        private AnimationCurve frontWheelRestrictCurve;
+
 
         private Transform centerOfMass;
         private Rigidbody m_Rigidbody;
@@ -87,6 +87,16 @@ namespace KikiNgao.SimpleBikeControl
         {
             CreateCenterOfMass();
             SettingRigidbody();
+             frontWheelRestrictCurve =
+        new AnimationCurve(
+            new Keyframe(0f, 1f),      // Full turning at 0
+            new Keyframe(1f, 0.7f),    // Already reduced at walking speed
+            new Keyframe(3f, 0.5f),    // 50% steering at 3 kph
+            new Keyframe(10f, 0.35f),  // Still tighter at 10 kph
+            new Keyframe(20f, 0.25f),
+            new Keyframe(30, 0.2f)// Very limited at max speed
+        );
+
             Freeze = true;
         }
 
