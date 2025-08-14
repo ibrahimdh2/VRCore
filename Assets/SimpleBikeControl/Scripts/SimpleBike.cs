@@ -32,7 +32,7 @@ namespace KikiNgao.SimpleBikeControl
         private Rigidbody m_Rigidbody;
 
         public Rigidbody GetRigidbody() => m_Rigidbody;
-
+        public float GetBicycleVelocity() => m_Rigidbody.linearVelocity.magnitude *3.61f;
         [Header("VR Inputs (mounted to the real handlebar)")]
         public Transform leftController;
         public Transform rightController;

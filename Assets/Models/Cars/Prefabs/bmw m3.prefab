@@ -331,6 +331,7 @@ GameObject:
   - component: {fileID: -6452300322519170535}
   - component: {fileID: 682358090601085955}
   - component: {fileID: 7615613077229417303}
+  - component: {fileID: 7873123136179814323}
   m_Layer: 0
   m_Name: bmw m3
   m_TagString: Vehicle
@@ -377,6 +378,7 @@ MonoBehaviour:
   frontRightWheel: {fileID: 2116432981192664233}
   rearLeftWheel: {fileID: 5045611556726292123}
   rearRightWheel: {fileID: 9089898773628683958}
+  waypoints: []
   raycastLength: 7
   isPaused: 0
   halfExtents: {x: 1, y: 0.5, z: 1}
@@ -429,6 +431,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.536861, y: 1.2855268, z: 1.1449411}
   m_Center: {x: -0.0028703213, y: 0.62874645, z: -1.6384442}
+--- !u!114 &7873123136179814323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3326038126844165700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdd25cffd482e8447af63babd124e11e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  signal: {fileID: 0}
 --- !u!1 &4215526088331900415
 GameObject:
   m_ObjectHideFlags: 0

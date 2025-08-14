@@ -134,6 +134,7 @@ GameObject:
   - component: {fileID: -483119482468352668}
   - component: {fileID: 5760763399105170551}
   - component: {fileID: 7486566301495494935}
+  - component: {fileID: 3193770744929069003}
   m_Layer: 0
   m_Name: ford everest sport
   m_TagString: Vehicle
@@ -180,6 +181,7 @@ MonoBehaviour:
   frontRightWheel: {fileID: 4237395836265325986}
   rearLeftWheel: {fileID: 5795813667901119589}
   rearRightWheel: {fileID: 2636112127416176295}
+  waypoints: []
   raycastLength: 10
   isPaused: 0
   halfExtents: {x: 1, y: 0.5, z: 1}
@@ -232,6 +234,19 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &3193770744929069003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1331086268463869319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdd25cffd482e8447af63babd124e11e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  signal: {fileID: 0}
 --- !u!1 &1751823283834430245
 GameObject:
   m_ObjectHideFlags: 0

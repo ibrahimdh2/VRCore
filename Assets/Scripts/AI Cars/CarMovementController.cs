@@ -21,11 +21,14 @@ public class CarMovementController : MonoBehaviour
     public float raycastLength;
     [SerializeField]private bool isPaused = false;
     public Vector3 halfExtents;
+    public SignalStoppingVehicle signalStoppingVehicle;
+
 
     private void Awake()
     {
         if (frontLeftWheel != null) frontLeftOriginalRotation = frontLeftWheel.localRotation;
         if (frontRightWheel != null) frontRightOriginalRotation = frontRightWheel.localRotation;
+        signalStoppingVehicle = GetComponent<SignalStoppingVehicle>();
     }
 
     public void SetWaypoints(Transform[] newWaypoints)
@@ -73,7 +76,7 @@ public class CarMovementController : MonoBehaviour
                 }
                 else
                 {
-                    if ((signal != null && signal.State != LightState.Green))
+                    if ((signalStoppingVehicle.signal != null && signalStoppingVehicle.signal.State != LightState.Green))
                     {
                         isPaused = true;
                     }
@@ -110,30 +113,9 @@ public class CarMovementController : MonoBehaviour
         VehiclePoolManager.Instance.ReturnCar(gameObject);
     }
 
-    public TrafficLight signal = null;
-
-    private void OnTriggerEnter(Collider other)
-    {
-        Debug.Log("Signal Set");
-        if (other.CompareTag("Stopper"))
-        {
-            if (signal == null)
-            {
-                if (other.gameObject.TryGetComponent<TrafficLightStopper>(out TrafficLightStopper stopper))
-                {
-                    signal = stopper.trafficLight;
-                }
-            }
-
-            
-        }
-    }
     
 
-    private void OnTriggerExit(Collider other)
-    {
-        signal = null;
-    }
+    
 
     void RotateWheels(float rotationAmount, float steerAngle)
     {

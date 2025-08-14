@@ -5,11 +5,13 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.IO;
 using UnityEngine.InputSystem;
+using KikiNgao.SimpleBikeControl;
 
 public class DataManager : MonoBehaviour
 {
     public OrderedDictionary orderedDictionary = new();
     public SpeedReceiver speedReceiver;
+    public SimpleBike bikeController;
     private float lastRecordedTime;
     public float delay = 1f;
     public bool startRecording;
@@ -71,7 +73,7 @@ public class DataManager : MonoBehaviour
                 // Fix: Use timeStamp as key more safely - timestamps should be unique enough
                 if (!orderedDictionary.Contains(timeStamp))
                 {
-                    orderedDictionary.Add(timeStamp, speed);
+                    orderedDictionary.Add(timeStamp, (sensorSpeed: speed, bikeSpeed: bikeController.GetBicycleVelocity()));
                     lastRecordedTime = Time.time;
                     Debug.Log($"Recorded: {timeStamp} - {speed} KPH"); // Debug logging
                 }
@@ -113,13 +115,20 @@ public class DataManager : MonoBehaviour
 
                 // Headers
                 worksheet.Cell(1, 1).Value = "Time";
-                worksheet.Cell(1, 2).Value = "Speed (KPH)";
+                worksheet.Cell(1, 2).Value = "Sensor Speed (KPH)";
+                worksheet.Cell(1, 3).Value = "In-game Speed (KPH)";
 
                 int row = 2;
                 foreach (DictionaryEntry entry in orderedDictionary)
                 {
                     worksheet.Cell(row, 1).Value = entry.Key.ToString();
-                    worksheet.Cell(row, 2).Value = Convert.ToSingle(entry.Value);
+
+                    var speeds = (ValueTuple<float, float>)entry.Value;
+
+
+
+                    worksheet.Cell(row, 2).Value = Convert.ToSingle(speeds.Item1);
+                    worksheet.Cell(row, 3).Value = Convert.ToSingle(speeds.Item2);
                     row++;
                 }
 
