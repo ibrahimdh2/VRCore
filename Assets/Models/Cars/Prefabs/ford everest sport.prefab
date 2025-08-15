@@ -185,7 +185,9 @@ MonoBehaviour:
   raycastLength: 10
   isPaused: 0
   halfExtents: {x: 1, y: 0.5, z: 1}
-  signal: {fileID: 0}
+  boxOffset: {x: 0, y: 0.26, z: 0}
+  signalStoppingVehicle: {fileID: 0}
+  yPos: 0.2
 --- !u!65 &5760763399105170551
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -247,6 +249,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   signal: {fileID: 0}
+  bicycleSlowdown: 0
+  speedReceiver: {fileID: 0}
 --- !u!1 &1751823283834430245
 GameObject:
   m_ObjectHideFlags: 0

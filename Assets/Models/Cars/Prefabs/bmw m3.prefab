@@ -381,8 +381,10 @@ MonoBehaviour:
   waypoints: []
   raycastLength: 7
   isPaused: 0
-  halfExtents: {x: 1, y: 0.5, z: 1}
-  signal: {fileID: 0}
+  halfExtents: {x: 1, y: 0.58, z: 1}
+  boxOffset: {x: 0, y: 0.26, z: 0}
+  signalStoppingVehicle: {fileID: 0}
+  yPos: 0.21
 --- !u!54 &682358090601085955
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -444,6 +446,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   signal: {fileID: 0}
+  bicycleSlowdown: 0
+  speedReceiver: {fileID: 0}
 --- !u!1 &4215526088331900415
 GameObject:
   m_ObjectHideFlags: 0

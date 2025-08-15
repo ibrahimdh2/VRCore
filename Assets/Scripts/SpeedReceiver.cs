@@ -24,7 +24,7 @@ public class SpeedReceiver : MonoBehaviour
     private ConcurrentQueue<float> speedQueue = new ConcurrentQueue<float>();
 
     public bool simulate;
-    private bool stop;
+    [SerializeField]private bool stop;
 
     [SerializeField] private float simulateSpeed;
 
@@ -55,7 +55,7 @@ public class SpeedReceiver : MonoBehaviour
                 float decelPerSecond = latestSpeed / 0.5f; // Reduce to 0 in 0.5s
                 latestSpeed = Mathf.Max(0f, latestSpeed - decelPerSecond * Time.deltaTime);
                 simulateSpeed = latestSpeed;
-                Debug.Log($"[ZMQ] Decaying speed: {latestSpeed:F2} km/h");
+               // Debug.Log($"[ZMQ] Decaying speed: {latestSpeed:F2} km/h");
             }
             return;
         }

@@ -21,14 +21,16 @@ public class CarMovementController : MonoBehaviour
     public float raycastLength;
     [SerializeField]private bool isPaused = false;
     public Vector3 halfExtents;
+    public Vector3 boxOffset;
     public SignalStoppingVehicle signalStoppingVehicle;
 
-
+    public float yPos;
     private void Awake()
     {
         if (frontLeftWheel != null) frontLeftOriginalRotation = frontLeftWheel.localRotation;
         if (frontRightWheel != null) frontRightOriginalRotation = frontRightWheel.localRotation;
         signalStoppingVehicle = GetComponent<SignalStoppingVehicle>();
+        transform.position = new Vector3(transform.position.x, yPos, transform.position.z);
     }
 
     public void SetWaypoints(Transform[] newWaypoints)
@@ -53,11 +55,11 @@ public class CarMovementController : MonoBehaviour
     {
         while (currentIndex < waypoints.Length)
         {
-            Vector3 targetPos = new Vector3(waypoints[currentIndex].position.x, transform.position.y, waypoints[currentIndex].position.z);
+            Vector3 targetPos = new Vector3(waypoints[currentIndex].position.x, yPos, waypoints[currentIndex].position.z);
 
             while (Vector3.Distance(transform.position, targetPos) > 0.1f)
             {
-                Vector3 boxCenter = transform.position + Vector3.up * 0.5f;
+                Vector3 boxCenter = transform.position +  boxOffset + Vector3.up * 0.5f;
         
                 Quaternion orientation = transform.rotation;
 
@@ -140,7 +142,7 @@ public class CarMovementController : MonoBehaviour
     {
         Gizmos.color = Color.red;
 
-        Vector3 boxCenter = transform.position + Vector3.up * 0.5f;
+        Vector3 boxCenter = transform.position + boxOffset + Vector3.up * 0.5f;
         Quaternion orientation = transform.rotation;
 
         Matrix4x4 rotationMatrix = Matrix4x4.TRS(boxCenter + transform.forward * raycastLength * 0.5f, orientation, Vector3.one);
