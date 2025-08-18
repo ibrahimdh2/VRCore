@@ -1,5 +1,3 @@
-using DocumentFormat.OpenXml.Drawing.Spreadsheet;
-using Unity.Android.Gradle.Manifest;
 using UnityEngine;
 
 public class SignalStoppingVehicle : MonoBehaviour

@@ -3,7 +3,27 @@ guid: 719b8602351be1640854f5ff446f96a9
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: wood_planks_2k.jpg
+    second: {fileID: 2100000, guid: cce0885dc2aa63f45ab37f621a9fe9c0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: wood_planks_2k.jpg.003
+    second: {fileID: 2100000, guid: c70fe429f67759a4582de536514d31f1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: wood_table_worn
+    second: {fileID: 2100000, guid: fe4acfef6cd956d41945986c18e81fc8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: yield-sign-traffic-sign-clip-art-images-of-traffic-signs-56ce90
+    second: {fileID: 2100000, guid: 79642c3551c7be144a0fdd70951e98aa, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -36,7 +56,7 @@ ModelImporter:
     globalScale: 1
     meshCompression: 0
     addColliders: 0
-    useSRGBMaterialColor: 1
+    useSRGBMaterialColor: 0
     sortHierarchyByName: 1
     importPhysicalCameras: 1
     importVisibility: 1
