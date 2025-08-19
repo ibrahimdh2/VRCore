@@ -207,8 +207,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.000454, y: 1.6662052, z: 1.020201}
-  m_Center: {x: -0.038852297, y: 0.8503485, z: -2.238181}
+  m_Size: {x: 1.4703307, y: 1.6662052, z: 1.020201}
+  m_Center: {x: 0.07271582, y: 0.8503485, z: -2.238181}
 --- !u!54 &7486566301495494935
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -251,6 +251,9 @@ MonoBehaviour:
   signal: {fileID: 0}
   bicycleSlowdown: 0
   speedReceiver: {fileID: 0}
+  halfExtents: {x: 0, y: 0, z: 0}
+  raycastLength: 0
+  boxOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &1751823283834430245
 GameObject:
   m_ObjectHideFlags: 0
