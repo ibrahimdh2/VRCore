@@ -355,6 +355,10 @@ namespace KikiNgao.SimpleBikeControl
             // Reset turn rate tracking when at rest
             previousTurnAngle = 0f;
             turnRate = 0f;
+
+            // Ensure brakes are cleared when at rest
+            frontWheelCollider.brakeTorque = 0f;
+            rearWheelCollider.brakeTorque = 0f;
         }
 
         private void ResetWheelsCollider()
