@@ -178,13 +178,33 @@ namespace KikiNgao.SimpleBikeControl
             transform.rotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y, 0f);
         }
 
+        // Add these fields to your class (near the other private fields)
+        private bool wasBrakingLastFrame = false;
+        private float brakeReleaseTimer = 0f;
+        private const float BRAKE_RELEASE_DELAY = 0.1f; // Small delay to prevent brake fluttering
+
+        // Add this improved version of the Update method
         private void Update()
         {
-            // ADDITIONAL FIX: Also handle steering in Update() for even more responsive input
-            // This ensures steering updates at frame rate, not just physics rate
+            // Handle steering in Update() for responsive input
             if (!ReadyToRide()) return;
             if (leftController && rightController) TurningBike();
+
+            // Handle brake release timer
+            if (brakeReleaseTimer > 0)
+            {
+                brakeReleaseTimer -= Time.deltaTime;
+                if (brakeReleaseTimer <= 0)
+                {
+                    // Force clear brakes after delay
+                    frontWheelCollider.brakeTorque = 0f;
+                    rearWheelCollider.brakeTorque = 0f;
+                    wasBrakingLastFrame = false;
+                }
+            }
         }
+
+        
 
         /// <summary>
         /// Calculate the speed multiplier based on current turn angle
@@ -219,6 +239,9 @@ namespace KikiNgao.SimpleBikeControl
         /// <summary>
         /// FIXED: Completely immediate steering response - no delays or smoothing
         /// </summary>
+        /// <summary>
+        /// FIXED: Completely immediate steering response with improved braking logic
+        /// </summary>
         private void TurningBike()
         {
             if (!leftController || !rightController) return;
@@ -232,44 +255,76 @@ namespace KikiNgao.SimpleBikeControl
             // Apply trim and sensitivity directly to wrapped angle
             float rawAngle = (wrappedYawDeg - straightAngle) * turnSensitivity;
 
-            // FIXED: Store the raw angle BEFORE any speed-based modifications for turn rate calculation
-            float rawAngleForRate = rawAngle;
-
-            // Apply speed-based reduction if enabled (but only affects the final output, not responsiveness)
+            // Apply speed-based reduction if enabled
+            float processedAngle = rawAngle;
             if (fasterTheSpeedSlowerTheTurn && frontWheelRestrictCurve != null)
             {
                 float speedKph = smoothedSpeed;
                 float factor = Mathf.Clamp01(frontWheelRestrictCurve.Evaluate(speedKph));
-                rawAngle *= factor;
+                processedAngle *= factor;
             }
 
-            // Apply deadzone
+            // Apply deadzone to both raw and processed angles
             if (Mathf.Abs(rawAngle) <= deadzoneDegrees) rawAngle = 0f;
-            if (Mathf.Abs(rawAngleForRate) <= deadzoneDegrees) rawAngleForRate = 0f;
+            if (Mathf.Abs(processedAngle) <= deadzoneDegrees) processedAngle = 0f;
 
             // Clamp to mechanical limits
-            float finalAngle = Mathf.Clamp(rawAngle, -maxTurnAngle, maxTurnAngle);
+            float finalAngle = Mathf.Clamp(processedAngle, -maxTurnAngle, maxTurnAngle);
 
-            // Calculate turn rate (degrees per second) using the raw angle before speed reduction
-            float angleDelta = Mathf.DeltaAngle(previousTurnAngle, rawAngleForRate);
-            float deltaTime = Time.fixedDeltaTime > 0 ? Time.fixedDeltaTime : Time.deltaTime;
-            turnRate = Mathf.Abs(angleDelta) / deltaTime;
-            previousTurnAngle = rawAngleForRate;
+            // IMPROVED: Calculate turn rate only when we're actively turning (not returning to straight)
+            float deltaTime = Time.fixedDeltaTime;
+            float angleDelta = Mathf.DeltaAngle(previousTurnAngle, rawAngle);
+
+            // Key fix: Only consider it a "sharp turn" if we're turning INTO a sharp angle, not OUT of it
+            bool isTurningIntoSharpAngle = Mathf.Abs(rawAngle) >= brakingTurnThreshold;
+            bool wasTurningSharp = Mathf.Abs(previousTurnAngle) >= brakingTurnThreshold;
+            bool isReturningToStraight = wasTurningSharp && Mathf.Abs(rawAngle) < Mathf.Abs(previousTurnAngle);
+
+            // Calculate turn rate but distinguish between turning into vs out of sharp turns
+            if (deltaTime > 0)
+            {
+                float rawTurnRate = Mathf.Abs(angleDelta) / deltaTime;
+
+                // If we're returning to straight from a sharp turn, don't use this for braking
+                if (isReturningToStraight)
+                {
+                    turnRate = 0f; // Suppress turn rate when straightening out
+                }
+                else if (isTurningIntoSharpAngle)
+                {
+                    turnRate = rawTurnRate; // Only use turn rate when actively turning sharp
+                }
+                else
+                {
+                    turnRate = 0f; // No significant turn rate for gentle turns
+                }
+            }
+            else
+            {
+                turnRate = 0f;
+            }
+
+            previousTurnAngle = rawAngle;
 
             // IMMEDIATE APPLICATION: Apply steering instantly with no lerping or delays
             calculatedTurnAngle = finalAngle;
             frontWheelCollider.steerAngle = finalAngle;
 
-            // Apply automatic braking on sharp turns
-            ApplyAutomaticBraking(Mathf.Abs(rawAngleForRate), turnRate);
+            // Apply automatic braking using improved logic
+            ApplyAutomaticBraking(Mathf.Abs(rawAngle), turnRate);
 
             // IMMEDIATE VISUAL FEEDBACK: Update visual elements instantly
             if (handlerBar) handlerBar.localRotation = Quaternion.Euler(0f, finalAngle, 0f);
             if (handlebarAssembly) handlebarAssembly.localRotation = Quaternion.Euler(0f, finalAngle, 0f);
         }
-
         /// <summary>
         /// Applies automatic braking based on turn angle and rate of change if enabled
+        /// </summary>
+        /// <param name="absTurnAngle">Absolute turn angle in degrees</param>
+        /// <param name="currentTurnRate">Current rate of turn change in degrees/sec</param>
+        /// <summary>
+        /// Applies automatic braking based on turn angle and rate of change if enabled
+        /// Enhanced to prevent braking when returning to straight from sharp turns
         /// </summary>
         /// <param name="absTurnAngle">Absolute turn angle in degrees</param>
         /// <param name="currentTurnRate">Current rate of turn change in degrees/sec</param>
@@ -278,51 +333,62 @@ namespace KikiNgao.SimpleBikeControl
             if (!autoBrakeOnSharpTurns || !IsMoving())
             {
                 // Clear any existing brake torque if auto-braking is disabled or not moving
-                if (!autoBrakeOnSharpTurns)
-                {
-                    frontWheelCollider.brakeTorque = 0f;
-                    rearWheelCollider.brakeTorque = 0f;
-                }
+                frontWheelCollider.brakeTorque = 0f;
+                rearWheelCollider.brakeTorque = 0f;
                 return;
             }
 
-            // Check if this is a sharp turn (either by angle or rate of change)
-            bool isSharpTurn = absTurnAngle >= brakingTurnThreshold;
-            bool isRapidChange = currentTurnRate >= sharpTurnRate;
+            // Primary condition: Must be in a sharp turn currently
+            bool isCurrentlyInSharpTurn = absTurnAngle >= brakingTurnThreshold;
 
-            // Decide whether to brake based on settings
-            bool shouldBrake = isSharpTurn && (!onlyBrakeOnRapidChanges || isRapidChange);
+            // Secondary condition: If checking rapid changes, must also have rapid input
+            bool hasRapidInput = !onlyBrakeOnRapidChanges || currentTurnRate >= sharpTurnRate;
+
+            // Additional safety: Must be outside deadzone (actually turning)
+            bool isActuallyTurning = absTurnAngle > deadzoneDegrees;
+
+            // FIXED: Only brake if ALL conditions are met AND we're currently in a sharp turn
+            bool shouldBrake = isActuallyTurning && isCurrentlyInSharpTurn && hasRapidInput;
 
             if (shouldBrake)
             {
-                // Calculate brake force based on turn angle
+                // Calculate brake force based on how much we exceed the threshold
                 float excessAngle = absTurnAngle - brakingTurnThreshold;
                 float maxExcess = maxTurnAngle - brakingTurnThreshold;
                 float angleIntensity = Mathf.Clamp01(excessAngle / maxExcess);
 
-                // If using rapid change detection, also factor in turn rate
+                // If using rapid change detection, factor in turn rate intensity
                 float rateIntensity = 1f;
-                if (onlyBrakeOnRapidChanges)
+                if (onlyBrakeOnRapidChanges && currentTurnRate > 0)
                 {
-                    rateIntensity = Mathf.Clamp01((currentTurnRate - sharpTurnRate) / sharpTurnRate);
+                    rateIntensity = Mathf.Clamp01(currentTurnRate / (sharpTurnRate * 2f)); // More gradual ramp-up
                 }
 
-                // Combine both factors
-                float totalIntensity = angleIntensity * (onlyBrakeOnRapidChanges ? rateIntensity : 1f);
+                // Combine factors with emphasis on current angle over rate
+                float totalIntensity = angleIntensity * (onlyBrakeOnRapidChanges ? (0.7f + 0.3f * rateIntensity) : 1f);
                 float brakeForce = totalIntensity * maxBrakeForce;
 
-                // Apply braking to both wheels
+                // Apply braking
                 frontWheelCollider.brakeTorque = brakeForce;
                 rearWheelCollider.brakeTorque = brakeForce;
+
+                // Debug info (remove in production)
+                Debug.Log($"AUTO BRAKE: Angle={absTurnAngle:F1}° (thresh={brakingTurnThreshold}°), Rate={currentTurnRate:F1}°/s, Force={brakeForce:F0}");
             }
             else
             {
-                // Clear brake torque for gentle/gradual turns
+                // Clear brakes immediately when conditions aren't met
                 frontWheelCollider.brakeTorque = 0f;
                 rearWheelCollider.brakeTorque = 0f;
+
+                // Debug info for when brakes are cleared
+                if (absTurnAngle <= deadzoneDegrees)
+                {
+                    Debug.Log($"BRAKES CLEARED: Going straight (angle={absTurnAngle:F1}°)");
+                }
             }
         }
-
+        // Modified MovingBike method to ensure brakes are properly cleared
         private void MovingBike()
         {
             Freeze = false;
@@ -330,14 +396,16 @@ namespace KikiNgao.SimpleBikeControl
             m_Rigidbody.angularDamping = 0f;
 
             // Only clear brake torque if auto-braking is disabled
-            if (!autoBrakeOnSharpTurns)
+            // AND we're not currently in a braking condition
+            if (!autoBrakeOnSharpTurns || Mathf.Abs(calculatedTurnAngle) < brakingTurnThreshold)
             {
                 frontWheelCollider.brakeTorque = 0;
                 rearWheelCollider.brakeTorque = 0;
+                wasBrakingLastFrame = false;
+                brakeReleaseTimer = 0f;
             }
 
             rearWheelCollider.motorTorque = 0;
-
             UpdateCenterOfMass();
         }
 
