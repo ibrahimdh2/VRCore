@@ -12,6 +12,7 @@ public class SpeedReceiver : MonoBehaviour
     private bool running = true;
     private float latestSpeed = 0f;
     public float speedKph => latestSpeed;
+    
 
     private SubscriberSocket subSocket;
 

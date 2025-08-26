@@ -32,6 +32,7 @@ public class RigidBodyController : MonoBehaviour
     public float visualSteerMultiplier = 1f;   // scale the visual steering
     public float visualSteerOffset = 0f;       // shift if visuals feel off
     public float CurrentAngleRaw { get; private set; }
+   
 
     void Update()
     {
@@ -58,10 +59,13 @@ public class RigidBodyController : MonoBehaviour
         float turningAngle = (visualAngle / maxVisualSteer) * turnSharpness;
 
         // Rotate bike around pivot
-        if (turningPivot != null)
-            transform.RotateAround(turningPivot.position, Vector3.up, turningAngle * Time.deltaTime * 50f);
-        else
-            transform.Rotate(Vector3.up, turningAngle * Time.deltaTime * 50f);
+        if (!(speedReceiver.speedKph < 1))
+        {
+            if (turningPivot != null)
+                transform.RotateAround(turningPivot.position, Vector3.up, turningAngle * Time.deltaTime * 50f);
+            else
+                transform.Rotate(Vector3.up, turningAngle * Time.deltaTime * 50f); 
+        }
 
         // Spin wheels visually
         RotateWheels();
