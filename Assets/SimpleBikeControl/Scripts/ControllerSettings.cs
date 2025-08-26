@@ -55,7 +55,7 @@ public class ControllerSettings : MonoBehaviour
 
     void Update()
     {
-        inputTurnAngleText.text = bikeController.calculateAngle.ToString();   
+       // inputTurnAngleText.text = bikeController.calculateAngle.ToString();   
     }
     public void LoadSettings()
     {
@@ -100,7 +100,7 @@ public class ControllerSettings : MonoBehaviour
     }
     public void SetStraightAngle()
     {
-        bikeController.straightAngle = bikeController.calculateAngle;
+       // bikeController.straightAngle = bikeController.calculateAngle;
         straightAngleText.text = bikeController.straightAngle.ToString("f2");
 
     }

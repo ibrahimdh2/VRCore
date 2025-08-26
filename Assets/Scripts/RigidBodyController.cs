@@ -2,47 +2,89 @@
 
 public class RigidBodyController : MonoBehaviour
 {
+    [Header("VR Handle References")]
     public Transform leftController;
     public Transform rightController;
 
-    public Transform frontWheel;
-    public Transform backWheel;
+    [Header("Bike Parts")]
+    public Transform frontHandleAssembly;   // handlebars + fork root
+    public Transform frontFork;             // fork object that turns (Y rotation)
+    public Transform frontWheelSpin;        // object that spins around X
+    public Transform backWheel;             // back wheel (spins only)
+    public Transform turningPivot;          // pivot point of bike
 
-    public Transform turningPivot; // assign in inspector (e.g., front wheel pivot point)
-
+    [Header("Physics & Control")]
     public SpeedReceiver speedReceiver;
     public float multiplier = 1f;
-    public float turnSensitivity = 1f; // sensitivity for steering
+    public float turnSensitivity = 1f;      // how responsive the bike is
     public Rigidbody rb;
 
-    public float calculateAngle;
+    [Header("Steering Settings")]
+    public float maxVisualSteer = 45f;      // max degrees handlebars can turn visually
+    public float turnSharpness = 2f;        // higher = sharper real turning
 
+    [Header("Debug")]
+    public float handlebarAngle;            // raw VR handlebar angle
     public float straightAngle;
+
+    private float wheelRadius = 0.35f; // in meters
+    [Header("Visual Steering Correction")]
+    public float visualSteerMultiplier = 1f;   // scale the visual steering
+    public float visualSteerOffset = 0f;       // shift if visuals feel off
 
     void Update()
     {
-        // Get direct handlebar angle (wrapped to -180 to 180)
+        // Get VR handlebar input
         if (!TryGetHandlebarYawWrapped(out float wrappedYawDeg))
             return;
 
-        // Apply sensitivity and trim
-        float angle = (wrappedYawDeg - straightAngle) * turnSensitivity;
+        // Visual steering (direct from VR)
+        handlebarAngle = wrappedYawDeg - straightAngle;
 
-        // Rotate around turning pivot (local Y axis)
+        // Calculate visual steering separately from bike turning
+        float visualAngle = handlebarAngle * visualSteerMultiplier + visualSteerOffset;
+        visualAngle = Mathf.Clamp(visualAngle, -maxVisualSteer, maxVisualSteer);
+
+        // Apply visual rotation to handlebars + fork
+        if (frontHandleAssembly != null)
+            frontHandleAssembly.localRotation = Quaternion.Euler(0, visualAngle, 0);
+
+        if (frontFork != null)
+            frontFork.localRotation = Quaternion.Euler(0, visualAngle, 0);
+
+
+        // Calculate effective turning angle for bike body
+        float speedMS = speedReceiver.speedKph / 3.6f;
+        float turningAngle = (visualAngle / maxVisualSteer) * turnSharpness * (1f / (1f + speedMS));
+        // note: higher speed → smaller turning
+
+        // Rotate bike around pivot
         if (turningPivot != null)
-        {
-            transform.RotateAround(turningPivot.position, Vector3.up, angle * Time.deltaTime);
-        }
+            transform.RotateAround(turningPivot.position, Vector3.up, turningAngle * Time.deltaTime * 50f);
         else
-        {
-            transform.Rotate(Vector3.up, angle * Time.deltaTime);
-        }
+            transform.Rotate(Vector3.up, turningAngle * Time.deltaTime * 50f);
+
+        // Spin wheels visually
+        RotateWheels();
     }
 
     private void FixedUpdate()
     {
-        // Forward motion
+        // Apply forward velocity
         rb.linearVelocity = transform.forward * multiplier * speedReceiver.speedKph;
+    }
+
+    private void RotateWheels()
+    {
+        float speedMS = speedReceiver.speedKph / 3.6f; // kph → m/s
+        float angularVel = speedMS / wheelRadius;      // rad/s
+        float degPerFrame = angularVel * Mathf.Rad2Deg * Time.deltaTime;
+
+        if (frontWheelSpin != null)
+            frontWheelSpin.Rotate(Vector3.right, degPerFrame, Space.Self);
+
+        if (backWheel != null)
+            backWheel.Rotate(Vector3.right, degPerFrame, Space.Self);
     }
 
     private bool TryGetHandlebarYawWrapped(out float angleDeg)
@@ -50,20 +92,15 @@ public class RigidBodyController : MonoBehaviour
         angleDeg = 0f;
         if (!leftController || !rightController) return false;
 
-        // Controller positions in bike-local space, ignore vertical
         Vector3 leftLocal = transform.InverseTransformPoint(leftController.position);
         Vector3 rightLocal = transform.InverseTransformPoint(rightController.position);
         leftLocal.y = 0f; rightLocal.y = 0f;
 
-        Vector3 barRight = rightLocal - leftLocal;           // grips line (left→right)
-        if (barRight.sqrMagnitude < 1e-6f) return false;     // hands coincide: no reliable reading
+        Vector3 barRight = rightLocal - leftLocal;
+        if (barRight.sqrMagnitude < 1e-6f) return false;
 
-        // Perpendicular gives the bar's forward in bike space:
         Vector3 barForward = Vector3.Cross(barRight, Vector3.up).normalized;
-
-        // Yaw relative to bike forward (Z+)
         angleDeg = Vector3.SignedAngle(Vector3.forward, barForward, Vector3.up);
-        calculateAngle = angleDeg;
         return true;
     }
 }
