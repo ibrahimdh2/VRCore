@@ -52,11 +52,8 @@ public class RigidBodyController : MonoBehaviour
         if (frontFork != null)
             frontFork.localRotation = Quaternion.Euler(0, visualAngle, 0);
 
-
-        // Calculate effective turning angle for bike body
-        float speedMS = speedReceiver.speedKph / 3.6f;
-        float turningAngle = (visualAngle / maxVisualSteer) * turnSharpness * (1f / (1f + speedMS));
-        // note: higher speed → smaller turning
+        // Calculate effective turning angle for bike body (removed speed reduction)
+        float turningAngle = (visualAngle / maxVisualSteer) * turnSharpness;
 
         // Rotate bike around pivot
         if (turningPivot != null)
