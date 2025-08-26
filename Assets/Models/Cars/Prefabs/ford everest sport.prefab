@@ -174,7 +174,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6c5caf39a559dd438c7aa1566e3f22e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 40
+  moveSpeed: 32
   rotateSpeed: 5
   maxSteerAngle: 30
   frontLeftWheel: {fileID: 7370064228109944847}

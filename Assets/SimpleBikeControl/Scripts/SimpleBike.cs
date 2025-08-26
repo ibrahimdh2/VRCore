@@ -112,11 +112,25 @@ namespace KikiNgao.SimpleBikeControl
             // Migrate legacy field if set
             if (turnDeadZone > 0f) deadzoneDegrees = turnDeadZone;
         }
+        private void TuneWheel(WheelCollider wc)
+        {
+            WheelFrictionCurve fwd = wc.forwardFriction;
+            fwd.stiffness = 2.0f;
+            wc.forwardFriction = fwd;
+
+            WheelFrictionCurve side = wc.sidewaysFriction;
+            side.stiffness = 3.0f;  // <- higher stiffness for faster direction switch
+            side.extremumSlip = 0.2f; // grip sooner
+            side.asymptoteSlip = 0.5f;
+            wc.sidewaysFriction = side;
+        }
 
         void Start()
         {
             CreateCenterOfMass();
             SettingRigidbody();
+            TuneWheel(frontWheelCollider);
+            TuneWheel(rearWheelCollider);
             frontWheelRestrictCurve =
        new AnimationCurve(
            new Keyframe(0f, 1f),      // Full turning at 0
@@ -309,6 +323,14 @@ namespace KikiNgao.SimpleBikeControl
             // IMMEDIATE APPLICATION: Apply steering instantly with no lerping or delays
             calculatedTurnAngle = finalAngle;
             frontWheelCollider.steerAngle = finalAngle;
+            // inside TurningBike(), after setting steerAngle
+            if (Mathf.Sign(finalAngle) != Mathf.Sign(previousTurnAngle))
+            {
+                // Reset wheel sideways slip instantly when direction reverses
+                frontWheelCollider.sidewaysFriction = ResetSlip(frontWheelCollider.sidewaysFriction);
+            }
+
+
 
             // Apply automatic braking using improved logic
             ApplyAutomaticBraking(Mathf.Abs(rawAngle), turnRate);
@@ -316,6 +338,13 @@ namespace KikiNgao.SimpleBikeControl
             // IMMEDIATE VISUAL FEEDBACK: Update visual elements instantly
             if (handlerBar) handlerBar.localRotation = Quaternion.Euler(0f, finalAngle, 0f);
             if (handlebarAssembly) handlebarAssembly.localRotation = Quaternion.Euler(0f, finalAngle, 0f);
+        }
+
+
+        private WheelFrictionCurve ResetSlip(WheelFrictionCurve curve)
+        {
+            curve.stiffness *= 1.0f; // keep stiffness same
+            return curve;
         }
         /// <summary>
         /// Applies automatic braking based on turn angle and rate of change if enabled
