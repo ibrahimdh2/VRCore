@@ -7,7 +7,7 @@ using System;
 using UnityEngine.SceneManagement;
 public class ControllerSettings : MonoBehaviour
 {
-    [SerializeField] private SimpleBike bikeController;
+    [SerializeField] private RigidBodyController bikeController;
     [SerializeField] private TextMeshProUGUI inputTurnAngleText;
     [SerializeField] private TextMeshProUGUI finalTurnAngleText;
     [SerializeField] private TextMeshProUGUI turnSensitivityText;
@@ -44,7 +44,7 @@ public class ControllerSettings : MonoBehaviour
     {
         if(bikeController == null)
         {
-            bikeController = GetComponent<SimpleBike>();
+            bikeController = GetComponent<RigidBodyController>();
         }
         if(dataManager == null)
         {
@@ -55,8 +55,7 @@ public class ControllerSettings : MonoBehaviour
 
     void Update()
     {
-        finalTurnAngleText.text = bikeController.frontWheelCollider.steerAngle.ToString();
-        inputTurnAngleText.text = bikeController.calculatedTurnAngle.ToString();    
+        inputTurnAngleText.text = bikeController.calculateAngle.ToString();   
     }
     public void LoadSettings()
     {
@@ -68,7 +67,7 @@ public class ControllerSettings : MonoBehaviour
         dataDelaySlider.value =  dataManager.delay = PlayerPrefs.GetFloat("Delay", 5);
         delayUI.text = dataManager.delay.ToString("f2");
         bool fastThe = PlayerPrefs.GetInt("FasterTheSpeedSlowerTheTurn", 1) == 1 ? true : false;
-        bikeController.fasterTheSpeedSlowerTheTurn =  fastThe;
+        //bikeController.fasterTheSpeedSlowerTheTurn =  fastThe;
         theToggle.isOn = fastThe;
 
 
@@ -79,7 +78,7 @@ public class ControllerSettings : MonoBehaviour
         PlayerPrefs.SetFloat("TurnSensitivity", senstivitySlider.value);
         PlayerPrefs.SetFloat("StraightAngle", bikeController.straightAngle);
         PlayerPrefs.SetFloat("Delay", dataManager.delay);
-        PlayerPrefs.SetInt("FasterTheSpeedSlowerTheTurn", Convert.ToInt32(bikeController.fasterTheSpeedSlowerTheTurn));
+       // PlayerPrefs.SetInt("FasterTheSpeedSlowerTheTurn", Convert.ToInt32(bikeController.fasterTheSpeedSlowerTheTurn));
 
 
     }
@@ -97,11 +96,11 @@ public class ControllerSettings : MonoBehaviour
     }
     public void AdjustDeadZone(float value)
     {
-        bikeController.turnDeadZone = value;
+       // bikeController.turnDeadZone = value;
     }
     public void SetStraightAngle()
     {
-        bikeController.straightAngle = bikeController.calculatedTurnAngle;
+        bikeController.straightAngle = bikeController.calculateAngle;
         straightAngleText.text = bikeController.straightAngle.ToString("f2");
 
     }
@@ -120,7 +119,7 @@ public class ControllerSettings : MonoBehaviour
     }
     public void SetFasterTheSpeedSlowerTheTurn(bool isOn)
     {
-        bikeController.fasterTheSpeedSlowerTheTurn = isOn;
+        //bikeController.fasterTheSpeedSlowerTheTurn = isOn;
 
     }
 }
