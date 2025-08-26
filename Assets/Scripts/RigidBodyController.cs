@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using TMPro;
+using UnityEngine;
 
 public class RigidBodyController : MonoBehaviour
 {
@@ -32,10 +33,12 @@ public class RigidBodyController : MonoBehaviour
     public float visualSteerMultiplier = 1f;   // scale the visual steering
     public float visualSteerOffset = 0f;       // shift if visuals feel off
     public float CurrentAngleRaw { get; private set; }
+    public TextMeshProUGUI speedText;
    
 
     void Update()
     {
+        speedText.text = speedReceiver.speedKph.ToString("f2");
         // Get VR handlebar input
         if (!TryGetHandlebarYawWrapped(out float wrappedYawDeg))
             return;

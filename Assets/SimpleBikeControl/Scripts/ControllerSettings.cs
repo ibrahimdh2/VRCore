@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
 using KikiNgao.SimpleBikeControl;
 using UnityEngine.UI;
@@ -72,13 +72,9 @@ public class ControllerSettings : MonoBehaviour
         if (bothEyes)
         {
             XRSettings.showDeviceView = true; // ensure VR is mirrored
-            XRSettings.gameViewRenderMode = GameViewRenderMode.BothEyes; 
+            XRSettings.gameViewRenderMode = GameViewRenderMode.RightEye; 
         }
-        else
-        {
-           
-            XRSettings.gameViewRenderMode = GameViewRenderMode.LeftEye;
-        }
+        
 
         if (bikeController == null)
         {
@@ -93,30 +89,65 @@ public class ControllerSettings : MonoBehaviour
 
     void Update()
     {
-        // Continuous input reading
+        // --- rotation stuff ---
         float pitchInput = rotatePitch.ReadValue<float>();
         float yawInput = rotateYaw.ReadValue<float>();
         float rollInput = rotateRoll.ReadValue<float>();
 
-        if (pitchInput + yawInput + rollInput !=  0)
+        if (pitchInput + yawInput + rollInput != 0)
         {
             rotX += pitchInput * rotationSpeed * Time.deltaTime;
             rotY += yawInput * rotationSpeed * Time.deltaTime;
             rotZ += rollInput * rotationSpeed * Time.deltaTime;
-
-            UpdateRotation(); 
+            UpdateRotation();
         }
 
-        float xMovement = leftRight.ReadValue<float>(); 
-        float zMovement = forwardBack.ReadValue<float>();
+        // --- movement stuff ---
+        float forwardInput = forwardBack.ReadValue<float>();
+        float strafeInput = leftRight.ReadValue<float>();
         float yMovement = upDown.ReadValue<float>();
 
-        Debug.Log($"Action Pressed page down {yMovement}");
-        if (xMovement + zMovement + yMovement != 0)
+        // Determine dominant axis of forward vector (X or Z)
+        Vector3 forward = XRRigParentTransform.forward;
+        forward.y = 0f;
+        forward.Normalize();
+
+        Vector3 moveDir = Vector3.zero;
+
+        if (Mathf.Abs(forward.x) > Mathf.Abs(forward.z))
         {
-            XRRigParentTransform.position += new Vector3(xMovement, yMovement, zMovement) * (rotationSpeed/10) * Time.deltaTime;
+            // Facing more along world X → forward/back uses X, strafe uses Z
+            moveDir = new Vector3(forwardInput * Mathf.Sign(forward.x),
+                                  yMovement,
+                                  strafeInput);
+        }
+        else
+        {
+            // Facing more along world Z → forward/back uses Z, strafe uses X
+            moveDir = new Vector3(strafeInput,
+                                  yMovement,
+                                  forwardInput * Mathf.Sign(forward.z));
+        }
+
+        // 🔹 Fix strafe inversion: flip depending on forward sign
+        if (Mathf.Abs(forward.x) > Mathf.Abs(forward.z))
+        {
+            // If facing -X, flip strafe so right stays right
+            moveDir.z = strafeInput * Mathf.Sign(forward.x);
+        }
+        else
+        {
+            // If facing -Z, flip strafe so right stays right
+            moveDir.x = strafeInput * Mathf.Sign(forward.z);
+        }
+
+        if (moveDir != Vector3.zero)
+        {
+            XRRigParentTransform.position += moveDir * (rotationSpeed / 10f) * Time.deltaTime;
         }
     }
+
+
     public void LoadSettings()
     {
         Debug.Log("Settings Loaded");
@@ -133,15 +164,17 @@ public class ControllerSettings : MonoBehaviour
         );
 
         // Apply to transform
-        XRRigParentTransform.rotation = Quaternion.Euler(eulers);
+        XRRigParentTransform.localRotation = Quaternion.Euler(eulers);
 
         // Keep internal state in sync
         rotX = eulers.x;
         rotY = eulers.y;
         rotZ = eulers.z;
-        XRRigParentTransform.position = new Vector3(PlayerPrefs.GetFloat("XPosition", 0), PlayerPrefs.GetFloat("YPosition", XRRigParentTransform.position.y), PlayerPrefs.GetFloat("ZPosition", 0));
- 
+        XRRigParentTransform.localPosition = new Vector3(PlayerPrefs.GetFloat("XPosition", 0.1602979f), PlayerPrefs.GetFloat("YPosition", 1.990758f), PlayerPrefs.GetFloat("ZPosition", 0.0114429f));
+        Debug.Log($"XR Parent position set {XRRigParentTransform.position}");
+        Debug.Log($"XR Parent rotation set {XRRigParentTransform.rotation.eulerAngles}");
         delayUI.text = dataManager.delay.ToString("f2");
+        
     }
 
     public void SaveSettings()
@@ -164,10 +197,21 @@ public class ControllerSettings : MonoBehaviour
     public void ResetSettings()
     {
         PlayerPrefs.DeleteAll();
-        LoadSettings();
-        Debug.Log("Settings Reset");
 
+        // Apply your intended reset defaults
+        XRRigParentTransform.position = new Vector3(0.1476246f, 1.951878f, 0.0114379f);
+        XRRigParentTransform.rotation = Quaternion.Euler(0, 90, 0);
+
+        rotX = 0;
+        rotY = 90;
+        rotZ = 0;
+
+
+        LoadSettings();   // now reload them into the system
+
+        Debug.Log("Settings Reset");
     }
+
     public void AdjustSensitivity(float value)
     {
       bikeController.turnSensitivity = value;

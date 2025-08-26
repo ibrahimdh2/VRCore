@@ -45,7 +45,7 @@ public class SpeedReceiver : MonoBehaviour
 
     private void SetupSimul(InputAction.CallbackContext context)
     {
-        simulateSpeed = 5f;
+        simulateSpeed += 5f;
     }
 
     void Start()

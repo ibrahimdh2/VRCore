@@ -22,7 +22,7 @@ public class Initializer : MonoBehaviour
         xrRig.rotation = bikeChild.rotation;
         xrRig.SetParent(bikeChild.transform);
         receiver.enabled = true;
-
+        
     }
 
 }
