@@ -31,6 +31,7 @@ public class RigidBodyController : MonoBehaviour
     [Header("Visual Steering Correction")]
     public float visualSteerMultiplier = 1f;   // scale the visual steering
     public float visualSteerOffset = 0f;       // shift if visuals feel off
+    public float CurrentAngleRaw { get; private set; }
 
     void Update()
     {
@@ -39,7 +40,8 @@ public class RigidBodyController : MonoBehaviour
             return;
 
         // Visual steering (direct from VR)
-        handlebarAngle = wrappedYawDeg - straightAngle;
+        CurrentAngleRaw = wrappedYawDeg; // store raw yaw before offset
+        handlebarAngle = (wrappedYawDeg - straightAngle) * turnSensitivity;
 
         // Calculate visual steering separately from bike turning
         float visualAngle = handlebarAngle * visualSteerMultiplier + visualSteerOffset;

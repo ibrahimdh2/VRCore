@@ -62,13 +62,9 @@ public class ControllerSettings : MonoBehaviour
         Debug.Log("Settings Loaded");
        senstivitySlider.value = bikeController.turnSensitivity = PlayerPrefs.GetFloat("TurnSensitivity", 0.1485f);
         turnSensitivityText.text = senstivitySlider.value.ToString("f2");
-       // turnDeadZone.value = bikeController.turnDeadZone = PlayerPrefs.GetFloat("TurnDeadzone", 3);
         bikeController.straightAngle = PlayerPrefs.GetFloat("StraightAngle", 0);
-        dataDelaySlider.value =  dataManager.delay = PlayerPrefs.GetFloat("Delay", 5);
+
         delayUI.text = dataManager.delay.ToString("f2");
-        bool fastThe = PlayerPrefs.GetInt("FasterTheSpeedSlowerTheTurn", 1) == 1 ? true : false;
-        //bikeController.fasterTheSpeedSlowerTheTurn =  fastThe;
-        theToggle.isOn = fastThe;
 
 
     }
@@ -100,7 +96,8 @@ public class ControllerSettings : MonoBehaviour
     }
     public void SetStraightAngle()
     {
-       // bikeController.straightAngle = bikeController.calculateAngle;
+        bikeController.straightAngle = bikeController.CurrentAngleRaw;
+
         straightAngleText.text = bikeController.straightAngle.ToString("f2");
 
     }
