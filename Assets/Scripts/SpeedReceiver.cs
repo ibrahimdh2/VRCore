@@ -5,6 +5,7 @@ using UnityEngine;
 using NetMQ;
 using NetMQ.Sockets;
 using System.Collections;
+using UnityEngine.InputSystem;
 
 public class SpeedReceiver : MonoBehaviour
 {
@@ -28,6 +29,24 @@ public class SpeedReceiver : MonoBehaviour
     [SerializeField]private bool stop;
 
     [SerializeField] private float simulateSpeed;
+    [SerializeField] private InputAction startSimulation;
+
+    
+    private void OnEnable()
+    {
+        startSimulation.performed += SetupSimul;
+        startSimulation.Enable();
+    }
+    private void OnDisable()
+    {
+        startSimulation.performed -= SetupSimul;
+        startSimulation.Disable();
+    }
+
+    private void SetupSimul(InputAction.CallbackContext context)
+    {
+        simulateSpeed = 5f;
+    }
 
     void Start()
     {

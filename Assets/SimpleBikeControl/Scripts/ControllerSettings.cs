@@ -17,6 +17,9 @@ public class ControllerSettings : MonoBehaviour
     [SerializeField] private InputAction rotatePitch;
     [SerializeField] private InputAction rotateYaw;
     [SerializeField] private InputAction rotateRoll;
+    [SerializeField] private InputAction forwardBack;
+    [SerializeField] private InputAction leftRight;
+    [SerializeField] private InputAction upDown;
    
     [SerializeField] private TextMeshProUGUI delayUI;
     [SerializeField] private Slider dataDelaySlider;
@@ -31,6 +34,9 @@ public class ControllerSettings : MonoBehaviour
     {
         settingsMenuInput.performed += EnableSettingsCanvas;
         rotateRoll.Enable();
+        upDown.Enable();
+        leftRight.Enable();
+        forwardBack.Enable();
         rotateYaw.Enable();
         rotatePitch.Enable();
         settingsMenuInput.Enable();
@@ -52,7 +58,10 @@ public class ControllerSettings : MonoBehaviour
         settingsMenuInput.performed -= EnableSettingsCanvas;
         rotateRoll.Disable();
         rotateYaw.Disable();
+        leftRight.Disable();
+        forwardBack.Disable();
         rotatePitch.Disable();
+        upDown.Disable();
         settingsMenuInput.Disable();
         settingsMenuInput.performed -= EnableSettingsCanvas;
         settingsMenuInput.Disable();
@@ -89,11 +98,24 @@ public class ControllerSettings : MonoBehaviour
         float yawInput = rotateYaw.ReadValue<float>();
         float rollInput = rotateRoll.ReadValue<float>();
 
-        rotX += pitchInput * rotationSpeed * Time.deltaTime;
-        rotY += yawInput * rotationSpeed * Time.deltaTime;
-        rotZ += rollInput * rotationSpeed * Time.deltaTime;
+        if (pitchInput + yawInput + rollInput !=  0)
+        {
+            rotX += pitchInput * rotationSpeed * Time.deltaTime;
+            rotY += yawInput * rotationSpeed * Time.deltaTime;
+            rotZ += rollInput * rotationSpeed * Time.deltaTime;
 
-        UpdateRotation();
+            UpdateRotation(); 
+        }
+
+        float xMovement = leftRight.ReadValue<float>(); 
+        float zMovement = forwardBack.ReadValue<float>();
+        float yMovement = upDown.ReadValue<float>();
+
+        Debug.Log($"Action Pressed page down {yMovement}");
+        if (xMovement + zMovement + yMovement != 0)
+        {
+            XRRigParentTransform.position += new Vector3(xMovement, yMovement, zMovement) * (rotationSpeed/10) * Time.deltaTime;
+        }
     }
     public void LoadSettings()
     {
@@ -117,7 +139,8 @@ public class ControllerSettings : MonoBehaviour
         rotX = eulers.x;
         rotY = eulers.y;
         rotZ = eulers.z;
-
+        XRRigParentTransform.position = new Vector3(PlayerPrefs.GetFloat("XPosition", 0), PlayerPrefs.GetFloat("YPosition", XRRigParentTransform.position.y), PlayerPrefs.GetFloat("ZPosition", 0));
+ 
         delayUI.text = dataManager.delay.ToString("f2");
     }
 
@@ -131,6 +154,10 @@ public class ControllerSettings : MonoBehaviour
         PlayerPrefs.SetFloat("XRotation", eulers.x);
         PlayerPrefs.SetFloat("YRotation", eulers.y);
         PlayerPrefs.SetFloat("ZRotation", eulers.z);
+        PlayerPrefs.SetFloat("XPosition", XRRigParentTransform.position.x);
+        PlayerPrefs.SetFloat("ZPosition", XRRigParentTransform.position.z);
+        PlayerPrefs.SetFloat("YPosition", XRRigParentTransform.position.y);
+        
 
 
     }
@@ -177,7 +204,7 @@ public class ControllerSettings : MonoBehaviour
     }
     private float rotX, rotY, rotZ;
 
-    
+
 
     private void UpdateRotation()
     {
