@@ -81,7 +81,7 @@ public class RigidBodyController : MonoBehaviour
     {
         // Apply forward velocity
         rb.linearVelocity = transform.forward * multiplier * speedReceiver.speedKph;
-        Debug.Log($"{rb.linearVelocity}");
+       // Debug.Log($"{rb.linearVelocity}");
     }
 
     private void RotateWheels()
@@ -114,6 +114,7 @@ public class RigidBodyController : MonoBehaviour
         return true;
     }
 
+    
     internal float GetBicycleVelocity()
     {
         return rb.linearVelocity.magnitude * multiplier;

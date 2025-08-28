@@ -70,7 +70,7 @@ public class SignalStoppingVehicle : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Signal Set");
+        //Debug.Log("Signal Set");
         if (other.CompareTag("Stopper"))
         {
             if (signal == null)
@@ -95,8 +95,9 @@ public class SignalStoppingVehicle : MonoBehaviour
         Quaternion orientation = transform.rotation;
         if (Physics.BoxCast(boxCenter + boxOffset, halfExtents, transform.forward, out RaycastHit hit, orientation, raycastLength))
         {
-            if (hit.collider.CompareTag("Vehicle"))
+            if (hit.collider.CompareTag("Vehicle") && hit.collider.gameObject.name != "Bike Controller")
             {
+                Debug.Log($"Vehicle Ahead name is {hit.collider.name}");
                 return true;
             }
             else

@@ -384,9 +384,11 @@ MonoBehaviour:
   raycastLength: 7
   isPaused: 0
   halfExtents: {x: 1.2, y: 0.58, z: 0.05}
-  boxOffset: {x: -0.25, y: 0.26, z: 0.83}
+  boxOffset: {x: 0, y: 0.26, z: 0}
   signalStoppingVehicle: {fileID: 0}
+  delayTimeAfterStopping: 3
   yPos: 0.21
+  collidingWithCar: 0
 --- !u!54 &682358090601085955
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -410,9 +412,9 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
-  m_IsKinematic: 1
+  m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 80
   m_CollisionDetection: 0
 --- !u!65 &7615613077229417303
 BoxCollider:
@@ -433,8 +435,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.2062668, y: 1.2855268, z: 4.0316973}
-  m_Center: {x: 0.057473026, y: 0.62874645, z: -1.6443784}
+  m_Size: {x: 1.5141081, y: 2.1579072, z: 3.5087602}
+  m_Center: {x: -0.011627993, y: 1.0649365, z: -1.9058474}
 --- !u!114 &7873123136179814323
 MonoBehaviour:
   m_ObjectHideFlags: 0

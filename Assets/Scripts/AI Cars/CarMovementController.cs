@@ -23,14 +23,17 @@ public class CarMovementController : MonoBehaviour
     public Vector3 halfExtents;
     public Vector3 boxOffset;
     public SignalStoppingVehicle signalStoppingVehicle;
-
+    public float delayTimeAfterStopping = 4f;
+    private WaitForSeconds waitFor;
     public float yPos;
+    public bool collidingWithCar;
     private void Awake()
     {
         if (frontLeftWheel != null) frontLeftOriginalRotation = frontLeftWheel.localRotation;
         if (frontRightWheel != null) frontRightOriginalRotation = frontRightWheel.localRotation;
         signalStoppingVehicle = GetComponent<SignalStoppingVehicle>();
         transform.position = new Vector3(transform.position.x, yPos, transform.position.z);
+        waitFor = new WaitForSeconds(delayTimeAfterStopping);
     }
 
     public void SetWaypoints(Transform[] newWaypoints)
@@ -67,25 +70,38 @@ public class CarMovementController : MonoBehaviour
 
                 {
                     // Ignore self or any children
-                    if (hit.collider.CompareTag("Vehicle"))
+                    if(collidingWithCar)
                     {
                         isPaused = true;
                     }
-                    else
+                    else if (hit.collider.CompareTag("Vehicle"))
+                    {
+                        isPaused = true;
+                    }
+                    else 
                     {
                         isPaused = false;
+                       
+
                     }
                 }
+                
                 else
                 {
-                    if ((signalStoppingVehicle.signal != null && signalStoppingVehicle.signal.State != LightState.Green))
+                    if(collidingWithCar)
                     {
                         isPaused = true;
                     }
-                    else
+                    else if ((signalStoppingVehicle.signal != null && signalStoppingVehicle.signal.State != LightState.Green))
+                    {
+                        isPaused = true;
+                    }
+                    else 
                     {
 
                         isPaused = false;
+                      //  Debug.Log("Run car again");
+
                     }
                 }
 
@@ -138,10 +154,28 @@ public class CarMovementController : MonoBehaviour
     }
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.collider.CompareTag("Vehicle") || collision.collider.CompareTag("Bike"))
+        if (collision.collider.CompareTag("Vehicle"))
         {
-            VehiclePoolManager.Instance.ReturnCar(this.gameObject);
+            Debug.Log("Car Collided with another car");
+
+            collidingWithCar = true;
+            Pause();
         }
+    }
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.collider.CompareTag("Vehicle"))
+        {
+            Debug.Log("Car Not Collided with another car");
+            StartCoroutine(ResumeAfterSomeTime());
+        }
+    }
+
+
+    IEnumerator ResumeAfterSomeTime()
+    {
+        yield return waitFor;
+        collidingWithCar = false;
     }
     // Optional: visualize the ray in the editor
     private void OnDrawGizmosSelected()
