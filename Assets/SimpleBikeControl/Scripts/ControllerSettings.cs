@@ -29,6 +29,7 @@ public class ControllerSettings : MonoBehaviour
 
     public bool bothEyes;
     [SerializeField] private DataManager dataManager;
+    public bool allowRotationSetting;
 
     private void OnEnable()
     {
@@ -89,61 +90,64 @@ public class ControllerSettings : MonoBehaviour
 
     void Update()
     {
-        // --- rotation stuff ---
-        float pitchInput = rotatePitch.ReadValue<float>();
-        float yawInput = rotateYaw.ReadValue<float>();
-        float rollInput = rotateRoll.ReadValue<float>();
-
-        if (pitchInput + yawInput + rollInput != 0)
+        if (allowRotationSetting)
         {
-            rotX += pitchInput * rotationSpeed * Time.deltaTime;
-            rotY += yawInput * rotationSpeed * Time.deltaTime;
-            rotZ += rollInput * rotationSpeed * Time.deltaTime;
-            UpdateRotation();
-        }
+            // --- rotation stuff ---
+            float pitchInput = rotatePitch.ReadValue<float>();
+            float yawInput = rotateYaw.ReadValue<float>();
+            float rollInput = rotateRoll.ReadValue<float>();
 
-        // --- movement stuff ---
-        float forwardInput = forwardBack.ReadValue<float>();
-        float strafeInput = leftRight.ReadValue<float>();
-        float yMovement = upDown.ReadValue<float>();
+            if (pitchInput + yawInput + rollInput != 0)
+            {
+                rotX += pitchInput * rotationSpeed * Time.deltaTime;
+                rotY += yawInput * rotationSpeed * Time.deltaTime;
+                rotZ += rollInput * rotationSpeed * Time.deltaTime;
+                UpdateRotation();
+            }
 
-        // Determine dominant axis of forward vector (X or Z)
-        Vector3 forward = XRRigParentTransform.forward;
-        forward.y = 0f;
-        forward.Normalize();
+            // --- movement stuff ---
+            float forwardInput = forwardBack.ReadValue<float>();
+            float strafeInput = leftRight.ReadValue<float>();
+            float yMovement = upDown.ReadValue<float>();
 
-        Vector3 moveDir = Vector3.zero;
+            // Determine dominant axis of forward vector (X or Z)
+            Vector3 forward = XRRigParentTransform.forward;
+            forward.y = 0f;
+            forward.Normalize();
 
-        if (Mathf.Abs(forward.x) > Mathf.Abs(forward.z))
-        {
-            // Facing more along world X → forward/back uses X, strafe uses Z
-            moveDir = new Vector3(forwardInput * Mathf.Sign(forward.x),
-                                  yMovement,
-                                  strafeInput);
-        }
-        else
-        {
-            // Facing more along world Z → forward/back uses Z, strafe uses X
-            moveDir = new Vector3(strafeInput,
-                                  yMovement,
-                                  forwardInput * Mathf.Sign(forward.z));
-        }
+            Vector3 moveDir = Vector3.zero;
 
-        // 🔹 Fix strafe inversion: flip depending on forward sign
-        if (Mathf.Abs(forward.x) > Mathf.Abs(forward.z))
-        {
-            // If facing -X, flip strafe so right stays right
-            moveDir.z = strafeInput * Mathf.Sign(forward.x);
-        }
-        else
-        {
-            // If facing -Z, flip strafe so right stays right
-            moveDir.x = strafeInput * Mathf.Sign(forward.z);
-        }
+            if (Mathf.Abs(forward.x) > Mathf.Abs(forward.z))
+            {
+                // Facing more along world X → forward/back uses X, strafe uses Z
+                moveDir = new Vector3(forwardInput * Mathf.Sign(forward.x),
+                                      yMovement,
+                                      strafeInput);
+            }
+            else
+            {
+                // Facing more along world Z → forward/back uses Z, strafe uses X
+                moveDir = new Vector3(strafeInput,
+                                      yMovement,
+                                      forwardInput * Mathf.Sign(forward.z));
+            }
 
-        if (moveDir != Vector3.zero)
-        {
-            XRRigParentTransform.position += moveDir * (rotationSpeed / 10f) * Time.deltaTime;
+            // 🔹 Fix strafe inversion: flip depending on forward sign
+            if (Mathf.Abs(forward.x) > Mathf.Abs(forward.z))
+            {
+                // If facing -X, flip strafe so right stays right
+                moveDir.z = strafeInput * Mathf.Sign(forward.x);
+            }
+            else
+            {
+                // If facing -Z, flip strafe so right stays right
+                moveDir.x = strafeInput * Mathf.Sign(forward.z);
+            }
+
+            if (moveDir != Vector3.zero)
+            {
+                XRRigParentTransform.position += moveDir * (rotationSpeed / 10f) * Time.deltaTime;
+            } 
         }
     }
 

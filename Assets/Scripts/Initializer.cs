@@ -12,7 +12,9 @@ public class Initializer : MonoBehaviour
     public Button startButton;
     public GameObject rightController;
     public GameObject leftController;
-    
+    public GameObject secondaryCamera;
+    public GameObject rawImage;
+    public bool turnRenderTextureOn;
 
   
     
@@ -22,6 +24,11 @@ public class Initializer : MonoBehaviour
         xrRig.rotation = bikeChild.rotation;
         xrRig.SetParent(bikeChild.transform);
         receiver.enabled = true;
+        if (turnRenderTextureOn)
+        {
+            secondaryCamera.SetActive(true);
+            rawImage.SetActive(true); 
+        }
         
     }
 
