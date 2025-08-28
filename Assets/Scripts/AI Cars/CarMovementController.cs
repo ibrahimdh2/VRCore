@@ -136,7 +136,13 @@ public class CarMovementController : MonoBehaviour
             frontRightWheel.Rotate(Vector3.right, -rotationAmount);
         }
     }
-
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.collider.CompareTag("Vehicle") || collision.collider.CompareTag("Bike"))
+        {
+            VehiclePoolManager.Instance.ReturnCar(this.gameObject);
+        }
+    }
     // Optional: visualize the ray in the editor
     private void OnDrawGizmosSelected()
     {

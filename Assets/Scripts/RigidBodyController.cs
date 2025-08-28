@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using UnityEngine;
 
 public class RigidBodyController : MonoBehaviour
@@ -34,11 +35,13 @@ public class RigidBodyController : MonoBehaviour
     public float visualSteerOffset = 0f;       // shift if visuals feel off
     public float CurrentAngleRaw { get; private set; }
     public TextMeshProUGUI speedText;
+    public TextMeshProUGUI simulationSpeedText;
    
 
     void Update()
     {
         speedText.text = speedReceiver.speedKph.ToString("f2");
+        simulationSpeedText.text = rb.linearVelocity.magnitude.ToString("f2");
         // Get VR handlebar input
         if (!TryGetHandlebarYawWrapped(out float wrappedYawDeg))
             return;
@@ -78,6 +81,7 @@ public class RigidBodyController : MonoBehaviour
     {
         // Apply forward velocity
         rb.linearVelocity = transform.forward * multiplier * speedReceiver.speedKph;
+        Debug.Log($"{rb.linearVelocity}");
     }
 
     private void RotateWheels()
@@ -108,5 +112,10 @@ public class RigidBodyController : MonoBehaviour
         Vector3 barForward = Vector3.Cross(barRight, Vector3.up).normalized;
         angleDeg = Vector3.SignedAngle(Vector3.forward, barForward, Vector3.up);
         return true;
+    }
+
+    internal float GetBicycleVelocity()
+    {
+        return rb.linearVelocity.magnitude * multiplier;
     }
 }

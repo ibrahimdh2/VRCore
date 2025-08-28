@@ -175,6 +175,7 @@ public class ControllerSettings : MonoBehaviour
         rotY = eulers.y;
         rotZ = eulers.z;
         XRRigParentTransform.localPosition = new Vector3(PlayerPrefs.GetFloat("XPosition", 0.1602979f), PlayerPrefs.GetFloat("YPosition", 1.990758f), PlayerPrefs.GetFloat("ZPosition", 0.0114429f));
+        XRRigParentTransform.localRotation = Quaternion.Euler(eulers);
         Debug.Log($"XR Parent position set {XRRigParentTransform.position}");
         Debug.Log($"XR Parent rotation set {XRRigParentTransform.rotation.eulerAngles}");
         delayUI.text = dataManager.delay.ToString("f2");
@@ -191,9 +192,9 @@ public class ControllerSettings : MonoBehaviour
         PlayerPrefs.SetFloat("XRotation", eulers.x);
         PlayerPrefs.SetFloat("YRotation", eulers.y);
         PlayerPrefs.SetFloat("ZRotation", eulers.z);
-        PlayerPrefs.SetFloat("XPosition", XRRigParentTransform.position.x);
-        PlayerPrefs.SetFloat("ZPosition", XRRigParentTransform.position.z);
-        PlayerPrefs.SetFloat("YPosition", XRRigParentTransform.position.y);
+        PlayerPrefs.SetFloat("XPosition", XRRigParentTransform.localPosition.x);
+        PlayerPrefs.SetFloat("ZPosition", XRRigParentTransform.localPosition.z);
+        PlayerPrefs.SetFloat("YPosition", XRRigParentTransform.localPosition.y);
         
 
 

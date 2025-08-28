@@ -11,7 +11,7 @@ public class DataManager : MonoBehaviour
 {
     public OrderedDictionary orderedDictionary = new();
     public SpeedReceiver speedReceiver;
-    public SimpleBike bikeController;
+    public RigidBodyController bikeController;
     private float lastRecordedTime;
     public float delay = 1f;
     public bool startRecording;
