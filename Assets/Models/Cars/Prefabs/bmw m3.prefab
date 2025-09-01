@@ -373,22 +373,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6c5caf39a559dd438c7aa1566e3f22e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 35
-  rotateSpeed: 5
-  maxSteerAngle: 30
+  maxSpeed: 10
+  acceleration: 5
+  brakingForce: 8
+  rotationSpeed: 120
+  sharpTurnAngle: 45
+  waypointTolerance: 1.1
   frontLeftWheel: {fileID: 4999197008561162149}
   frontRightWheel: {fileID: 2116432981192664233}
   rearLeftWheel: {fileID: 5045611556726292123}
   rearRightWheel: {fileID: 9089898773628683958}
-  waypoints: []
   raycastLength: 7
-  isPaused: 0
   halfExtents: {x: 1.2, y: 0.58, z: 0.05}
   boxOffset: {x: 0, y: 0.26, z: 0}
   signalStoppingVehicle: {fileID: 0}
   delayTimeAfterStopping: 3
   yPos: 0.21
-  collidingWithCar: 0
+  maxWaitTime: 8
+  yieldDistance: 2
+  speedChangeRate: 2
+  enableDebugLogs: 0
+  waypoints: []
+  currentWaypointIndex: 0
+  currentSpeed: 0
 --- !u!54 &682358090601085955
 Rigidbody:
   m_ObjectHideFlags: 0

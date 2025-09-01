@@ -28,7 +28,7 @@ public class CarMovementController : MonoBehaviour
     public float yPos;
 
     [Header("Deadlock Prevention")]
-    public float maxWaitTime = 8f; // Maximum time to wait before forcing movement
+    public float maxWaitTime = 3f; // Maximum time to wait before forcing movement
     public float yieldDistance = 2f; // Distance to move back when yielding
 
     [Header("Speed Control")]
@@ -38,7 +38,7 @@ public class CarMovementController : MonoBehaviour
     public bool enableDebugLogs = false; // Enable to see signal state logs
 
    [SerializeField] private Transform[] waypoints;
-    private int currentWaypointIndex = 0;
+    [SerializeField] private int currentWaypointIndex = 0;
 
     private Quaternion frontLeftOriginalRotation;
     private Quaternion frontRightOriginalRotation;
@@ -111,6 +111,11 @@ public class CarMovementController : MonoBehaviour
             // If reached waypoint -> switch
             if (distance < waypointTolerance)
             {
+                if (currentWaypointIndex + 1 > waypoints.Length-1)
+                {
+                    VehiclePoolManager.Instance.ReturnCar(this.gameObject);
+                    Debug.Log("Should return to the pool");
+                }
                 currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
                 // reset progress tracking so we don't false-detect deadlock immediately
                 lastPosition = transform.position;
@@ -339,11 +344,11 @@ public class CarMovementController : MonoBehaviour
     public void SetWaypoints(Transform[] newWaypoints)
     {
         waypoints = newWaypoints;
-        currentWaypointIndex = 0;
+        currentWaypointIndex = 1;
 
         if (waypoints != null && waypoints.Length > 1)
         {
-            Transform currentWayPoint = waypoints[currentWaypointIndex];
+            Transform currentWayPoint = waypoints[1];
             Vector3 wayPointDir = (currentWayPoint.position - transform.position).normalized;
             wayPointDir.y = 0;
             transform.rotation = Quaternion.LookRotation(wayPointDir);
