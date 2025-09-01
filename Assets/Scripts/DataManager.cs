@@ -18,7 +18,8 @@ public class DataManager : MonoBehaviour
 
     [SerializeField] private InputAction startRecord;
     [SerializeField] private GameObject recordingCanvas;
-
+    [Range(0,30f)]
+    public float timeScale = 1;
     private void OnEnable()
     {
         startRecord.performed += StartStopRecording;
@@ -63,6 +64,7 @@ public class DataManager : MonoBehaviour
 
     void Update()
     {
+        Time.timeScale = timeScale;
         if (startRecording)
         {
             if (Time.time > lastRecordedTime + delay)

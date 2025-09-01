@@ -339,7 +339,7 @@ public class CarMovementController : MonoBehaviour
     public void SetWaypoints(Transform[] newWaypoints)
     {
         waypoints = newWaypoints;
-        currentWaypointIndex = 1;
+        currentWaypointIndex = 0;
 
         if (waypoints != null && waypoints.Length > 1)
         {
