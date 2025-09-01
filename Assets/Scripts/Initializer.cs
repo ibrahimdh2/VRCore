@@ -31,5 +31,11 @@ public class Initializer : MonoBehaviour
         }
         
     }
+    public void SeatCameraOnOff()
+    {
+        bool inverse = !secondaryCamera.activeSelf;
+        secondaryCamera.SetActive(inverse);
+        rawImage.SetActive(inverse);
+    }
 
 }

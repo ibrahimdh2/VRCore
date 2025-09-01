@@ -96,7 +96,7 @@ public class RigidBodyController : MonoBehaviour
         if (backWheel != null)
             backWheel.Rotate(Vector3.right, degPerFrame, Space.Self);
     }
-
+    
     private bool TryGetHandlebarYawWrapped(out float angleDeg)
     {
         angleDeg = 0f;
@@ -114,7 +114,14 @@ public class RigidBodyController : MonoBehaviour
         return true;
     }
 
-    
+    private void OnCollisionExit(Collision collision)
+    {
+        if(collision.collider.CompareTag("Vehicle"))
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+    }
     internal float GetBicycleVelocity()
     {
         return rb.linearVelocity.magnitude * multiplier;

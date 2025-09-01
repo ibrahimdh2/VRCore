@@ -188,7 +188,7 @@ public class ControllerSettings : MonoBehaviour
         PlayerPrefs.SetFloat("TurnSensitivity", senstivitySlider.value);
         PlayerPrefs.SetFloat("StraightAngle", bikeController.straightAngle);
         PlayerPrefs.SetFloat("Delay", dataManager.delay);
-        Vector3 eulers = XRRigParentTransform.rotation.eulerAngles;
+        Vector3 eulers = XRRigParentTransform.localRotation.eulerAngles;
         PlayerPrefs.SetFloat("XRotation", eulers.x);
         PlayerPrefs.SetFloat("YRotation", eulers.y);
         PlayerPrefs.SetFloat("ZRotation", eulers.z);
@@ -253,7 +253,7 @@ public class ControllerSettings : MonoBehaviour
     }
     private float rotX, rotY, rotZ;
 
-
+    
 
     private void UpdateRotation()
     {

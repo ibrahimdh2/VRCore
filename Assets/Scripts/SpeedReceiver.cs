@@ -113,7 +113,12 @@ public class SpeedReceiver : MonoBehaviour
     }
     public void Resume()
     {
-        stop = false;
+        if (stop)
+        {
+            stop = false;
+            latestSpeed = simulateSpeed = 5f;
+        }
+  
     }
 
     void ReceiveData()
