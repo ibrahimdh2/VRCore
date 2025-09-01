@@ -37,13 +37,13 @@ public class CarMovementController : MonoBehaviour
     [Header("Debug Settings")]
     public bool enableDebugLogs = false; // Enable to see signal state logs
 
-    private Transform[] waypoints;
+   [SerializeField] private Transform[] waypoints;
     private int currentWaypointIndex = 0;
 
     private Quaternion frontLeftOriginalRotation;
     private Quaternion frontRightOriginalRotation;
 
-    private float currentSpeed = 0f;
+    [SerializeField]private float currentSpeed = 0f;
     private bool isPaused = false;
     private bool collidingWithCar = false;
     private WaitForSeconds waitFor;
@@ -57,6 +57,12 @@ public class CarMovementController : MonoBehaviour
     // Speed control variables
     private float targetMaxSpeed; // The speed we're transitioning to
     private float currentMaxSpeed; // The current max speed being used
+
+    // Progress tracking for deadlock detection
+    private Vector3 lastPosition;
+    private float lastProgressTime;
+
+    private Coroutine moveRoutineCoroutine;
 
     void Awake()
     {
@@ -75,134 +81,283 @@ public class CarMovementController : MonoBehaviour
         currentMaxSpeed = maxSpeed;
     }
 
-    void Update()
+    void Start()
     {
-        if (waypoints == null || waypoints.Length == 0) return;
-
-        // Handle yielding behavior
-        if (isYielding)
-        {
-            HandleYielding();
-            return;
-        }
-
-        if (isPaused)
-        {
-            // Check for deadlock timeout
-            if (collidingWithCar && Time.time - collisionStartTime > maxWaitTime)
-            {
-                ResolveDeadlock();
-            }
-            return;
-        }
-
-        // Update current max speed gradually towards target
-        UpdateMaxSpeed();
-
-        Transform target = waypoints[currentWaypointIndex];
-        Vector3 toTarget = target.position - transform.position;
-        toTarget.y = 0; // keep flat
-        float distance = toTarget.magnitude;
-
-        // --- Check for obstacles, signals, collisions ---
-        HandlePausing();
-
-        if (isPaused) return;
-
-        // Check next waypoint direction to adapt turning & speed
-        Vector3 currentDir = transform.forward;
-        float angleToTarget = Vector3.Angle(currentDir, toTarget.normalized);
-
-        // --- Adaptive Speed ---
-        float targetSpeed;
-        if (angleToTarget > sharpTurnAngle)
-        {
-            // Sharp turn ahead → slow down
-            targetSpeed = currentMaxSpeed * 0.5f;
-        }
-        else
-        {
-            // Gentle turn or straight → accelerate
-            targetSpeed = currentMaxSpeed;
-        }
-
-        // Smoothly adjust current speed towards target
-        if (currentSpeed < targetSpeed)
-            currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
-        else
-            currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, brakingForce * Time.deltaTime);
-
-        // --- Adaptive Turning ---
-        float turnMultiplier = Mathf.Lerp(0.3f, 1f, angleToTarget / 90f); // gentle = 0.3, sharp = 1
-        Quaternion targetRot = Quaternion.LookRotation(toTarget.normalized);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, rotationSpeed * turnMultiplier * Time.deltaTime);
-
-        // --- Move Forward ---
-        transform.position += transform.forward * currentSpeed * Time.deltaTime;
-
-        // --- Wheel Animation ---
-        float wheelRotationAmount = currentSpeed * 360f * Time.deltaTime;
-        RotateWheels(wheelRotationAmount, angleToTarget);
-
-        // --- Waypoint Switching ---
-        if (distance < waypointTolerance)
-        {
-            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
-        }
+        // nothing here; coroutine starts when waypoints assigned
     }
 
-    private void HandlePausing()
+    private void FixedUpdate()
     {
-        bool shouldPause = false;
+        // Gradually update currentMaxSpeed toward target (keeps physics-consistent)
+        UpdateMaxSpeed();
+    }
 
-        // Check for collision with other vehicles
-        if (collidingWithCar)
-        {
-            shouldPause = true;
-        }
-        else
-        {
-            // Check for obstacles ahead using boxcast
-            Vector3 boxCenter = transform.position + boxOffset + Vector3.up * 0.5f;
-            Quaternion orientation = transform.rotation;
+    private IEnumerator MoveRoutine()
+    {
+        if (waypoints == null || waypoints.Length == 0) yield break;
 
-            if (Physics.BoxCast(boxCenter, halfExtents, transform.forward, out RaycastHit hit, orientation, raycastLength))
+        lastPosition = transform.position;
+        lastProgressTime = Time.time;
+
+        while (true)
+        {
+            if (waypoints == null || waypoints.Length == 0) break;
+
+            Transform target = waypoints[currentWaypointIndex];
+            Vector3 toTarget = target.position - transform.position;
+            toTarget.y = 0;
+            float distance = toTarget.magnitude;
+
+            // If reached waypoint -> switch
+            if (distance < waypointTolerance)
             {
-                if (hit.collider.CompareTag("Vehicle"))
-                {
-                    shouldPause = true;
-                }
+                currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+                // reset progress tracking so we don't false-detect deadlock immediately
+                lastPosition = transform.position;
+                lastProgressTime = Time.time;
+                yield return null;
+                continue;
             }
-        }
 
-        // Check traffic signal - only pause if signal exists and is NOT green
-        if (!shouldPause && signalStoppingVehicle != null && signalStoppingVehicle.signal != null)
-        {
-            // Only pause if signal is red or yellow, resume if green
-            if (signalStoppingVehicle.signal.State != LightState.Green)
+            // If currently yielding, handle yielding routine (backwards movement + wait)
+            if (isYielding)
+            {
+                HandleYieldingStep();
+                // small check to avoid being stuck in yield forever (safety timeout)
+                if (Time.time - lastProgressTime > maxWaitTime + 2f)
+                {
+                    // End yielding forcibly
+                    EndYieldingImmediate();
+                }
+                yield return null;
+                continue;
+            }
+
+            // --- Obstacle & pausing checks (similar to HandlePausing) ---
+            bool shouldPause = false;
+            // Check immediate collisions that were detected via OnCollisionEnter
+            if (collidingWithCar)
             {
                 shouldPause = true;
-                if (enableDebugLogs)
+            }
+            else
+            {
+                Vector3 boxCenter = transform.position + boxOffset + Vector3.up * 0.5f;
+                Quaternion orientation = transform.rotation;
+                if (Physics.BoxCast(boxCenter, halfExtents, transform.forward, out RaycastHit hit, orientation, raycastLength))
                 {
-                    Debug.Log($"{gameObject.name}: Pausing for signal state: {signalStoppingVehicle.signal.State}");
+                    if (hit.collider.CompareTag("Vehicle"))
+                    {
+                        shouldPause = true;
+                    }
                 }
             }
-            else if (enableDebugLogs && isPaused)
+
+            // Traffic signal check
+            if (!shouldPause && signalStoppingVehicle != null && signalStoppingVehicle.signal != null)
             {
-                Debug.Log($"{gameObject.name}: Resuming - signal is Green");
+                if (signalStoppingVehicle.signal.State != LightState.Green)
+                    shouldPause = true;
+            }
+
+            isPaused = shouldPause;
+
+            if (isPaused)
+            {
+                // Deadlock detection: if no meaningful movement for maxWaitTime -> resolve
+                if (Vector3.Distance(transform.position, lastPosition) > 0.1f)
+                {
+                    // we made progress
+                    lastPosition = transform.position;
+                    lastProgressTime = Time.time;
+                }
+                else
+                {
+                    if (Time.time - lastProgressTime > maxWaitTime)
+                    {
+                        if (enableDebugLogs) Debug.Log($"{gameObject.name}: Deadlock suspected, resolving...");
+                        ResolveDeadlock();
+                        // update progress time to avoid immediate repeat
+                        lastProgressTime = Time.time;
+                    }
+                }
+
+                yield return null;
+                continue;
+            }
+
+            // --- Movement and steering when not paused ---
+            // direction & angle
+            Vector3 currentDir = transform.forward;
+            float angleToTarget = Vector3.Angle(currentDir, toTarget.normalized);
+
+            // Adaptive speed target (sharp turn => slow down)
+            float targetSpeed;
+            if (angleToTarget > sharpTurnAngle)
+                targetSpeed = currentMaxSpeed * 0.5f;
+            else
+                targetSpeed = currentMaxSpeed;
+
+            // Smooth speed change
+            if (currentSpeed < targetSpeed)
+                currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
+            else
+                currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, brakingForce * Time.deltaTime);
+
+            // Adaptive turning
+            float turnMultiplier = Mathf.Lerp(0.3f, 1f, angleToTarget / 90f);
+            Quaternion targetRot = Quaternion.LookRotation(toTarget.normalized);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, rotationSpeed * turnMultiplier * Time.deltaTime);
+
+            // Move forward
+            transform.position += transform.forward * currentSpeed * Time.deltaTime;
+
+            // Wheel animation
+            float wheelRotationAmount = currentSpeed * 360f * Time.deltaTime;
+            RotateWheels(wheelRotationAmount, angleToTarget);
+
+            // Update progress time because we moved
+            if (Vector3.Distance(transform.position, lastPosition) > 0.05f)
+            {
+                lastPosition = transform.position;
+                lastProgressTime = Time.time;
+            }
+
+            yield return null;
+        }
+
+        // When loop ends (no waypoints), return car to pool if you want that behavior:
+        // VehiclePoolManager.Instance.ReturnCar(gameObject);
+    }
+
+    private void HandleYieldingStep()
+    {
+        // Move backward slowly
+        Vector3 backwardDirection = -transform.forward;
+        float yieldSpeed = Mathf.Max(1f, currentMaxSpeed * 0.3f);
+        transform.position += backwardDirection * yieldSpeed * Time.deltaTime;
+
+        // Rotate wheels for backing up
+        float wheelRotationAmount = -yieldSpeed * 360f * Time.deltaTime;
+        RotateWheels(wheelRotationAmount, 0f);
+
+        // Check if we've moved far enough back
+        if (Vector3.Distance(transform.position, originalPosition) > yieldDistance)
+        {
+            // schedule end yielding
+            StartCoroutine(EndYielding());
+        }
+    }
+
+    private IEnumerator EndYielding()
+    {
+        // small wait to give other vehicle time to pass
+        yield return new WaitForSeconds(0.8f);
+        isYielding = false;
+        currentSpeed = 0f; // reset for smooth restart
+        // update last progress to avoid false deadlock detection
+        lastPosition = transform.position;
+        lastProgressTime = Time.time;
+    }
+
+    private void EndYieldingImmediate()
+    {
+        isYielding = false;
+        currentSpeed = 0f;
+        lastPosition = transform.position;
+        lastProgressTime = Time.time;
+    }
+
+    private void ResolveDeadlock()
+    {
+        // Find the other vehicle we're colliding/close to
+        Collider[] nearby = Physics.OverlapSphere(transform.position, 3f);
+        CarMovementController otherCar = null;
+
+        foreach (Collider col in nearby)
+        {
+            if (col.CompareTag("Vehicle") && col.gameObject != gameObject)
+            {
+                var comp = col.GetComponent<CarMovementController>();
+                if (comp != null && comp.collidingWithCar)
+                {
+                    otherCar = comp;
+                    break;
+                }
             }
         }
 
-        isPaused = shouldPause;
-    }
-
-    private void UpdateMaxSpeed()
-    {
-        if (currentMaxSpeed != targetMaxSpeed)
+        if (otherCar != null)
         {
-            currentMaxSpeed = Mathf.MoveTowards(currentMaxSpeed, targetMaxSpeed, speedChangeRate * Time.deltaTime);
+            if (vehiclePriority < otherCar.vehiclePriority)
+            {
+                if (enableDebugLogs) Debug.Log($"{gameObject.name}: Lower priority — will yield.");
+                StartYielding();
+            }
+            else if (vehiclePriority > otherCar.vehiclePriority)
+            {
+                if (enableDebugLogs) Debug.Log($"{gameObject.name}: Higher priority — forcing resume.");
+                ForceResume();
+            }
+            else
+            {
+                // Tiebreaker by X coordinate
+                if (transform.position.x < otherCar.transform.position.x)
+                    StartYielding();
+                else
+                    ForceResume();
+            }
+        }
+        else
+        {
+            // No other car found — try to nudge forward by forcing resume
+            ForceResume();
         }
     }
+
+    private void StartYielding()
+    {
+        isYielding = true;
+        originalPosition = transform.position;
+        collidingWithCar = false;
+        isPaused = false;
+        currentSpeed = 0f; // Stop immediately when starting to yield
+        // update progress
+        lastProgressTime = Time.time;
+    }
+
+    private void ForceResume()
+    {
+        collidingWithCar = false;
+        isPaused = false;
+        // give a tiny nudge forward to break potential stuck state
+        transform.position += transform.forward * 0.05f;
+        lastPosition = transform.position;
+        lastProgressTime = Time.time;
+    }
+
+    public void SetWaypoints(Transform[] newWaypoints)
+    {
+        waypoints = newWaypoints;
+        currentWaypointIndex = 1;
+
+        if (waypoints != null && waypoints.Length > 1)
+        {
+            Transform currentWayPoint = waypoints[currentWaypointIndex];
+            Vector3 wayPointDir = (currentWayPoint.position - transform.position).normalized;
+            wayPointDir.y = 0;
+            transform.rotation = Quaternion.LookRotation(wayPointDir);
+        }
+
+        currentSpeed = 0f; // reset speed when setting new path
+
+        // restart movement coroutine
+        if (moveRoutineCoroutine != null) StopCoroutine(moveRoutineCoroutine);
+        moveRoutineCoroutine = StartCoroutine(MoveRoutine());
+    }
+
+    public void Pause() => isPaused = true;
+    public void Resume() => isPaused = false;
 
     // Public methods for external speed control
     public void SetMaxSpeed(float newMaxSpeed)
@@ -237,114 +392,13 @@ public class CarMovementController : MonoBehaviour
         return Mathf.Abs(currentMaxSpeed - targetMaxSpeed) > 0.01f;
     }
 
-    private void ResolveDeadlock()
+    private void UpdateMaxSpeed()
     {
-        // Find the other vehicle we're colliding with
-        Collider[] nearbyVehicles = Physics.OverlapSphere(transform.position, 3f);
-        CarMovementController otherCar = null;
-
-        foreach (Collider col in nearbyVehicles)
+        if (currentMaxSpeed != targetMaxSpeed)
         {
-            if (col.CompareTag("Vehicle") && col.gameObject != gameObject)
-            {
-                otherCar = col.GetComponent<CarMovementController>();
-                if (otherCar != null && otherCar.collidingWithCar)
-                    break;
-            }
-        }
-
-        if (otherCar != null)
-        {
-            // Vehicle with lower priority yields (moves back)
-            if (vehiclePriority < otherCar.vehiclePriority)
-            {
-                StartYielding();
-            }
-            else if (vehiclePriority > otherCar.vehiclePriority)
-            {
-                // This vehicle has higher priority, force resume
-                ForceResume();
-            }
-            else
-            {
-                // Same priority (shouldn't happen with instance IDs, but fallback)
-                // Use position as tiebreaker
-                if (transform.position.x < otherCar.transform.position.x)
-                {
-                    StartYielding();
-                }
-                else
-                {
-                    ForceResume();
-                }
-            }
-        }
-        else
-        {
-            // No other car found, just resume
-            ForceResume();
+            currentMaxSpeed = Mathf.MoveTowards(currentMaxSpeed, targetMaxSpeed, speedChangeRate * Time.deltaTime);
         }
     }
-
-    private void StartYielding()
-    {
-        isYielding = true;
-        originalPosition = transform.position;
-        collidingWithCar = false;
-        isPaused = false;
-        currentSpeed = 0f; // Stop immediately when starting to yield
-    }
-
-    private void HandleYielding()
-    {
-        // Move backward slowly
-        Vector3 backwardDirection = -transform.forward;
-        float yieldSpeed = currentMaxSpeed * 0.3f;
-        transform.position += backwardDirection * yieldSpeed * Time.deltaTime;
-
-        // Rotate wheels for backing up
-        float wheelRotationAmount = -yieldSpeed * 360f * Time.deltaTime;
-        RotateWheels(wheelRotationAmount, 0f);
-
-        // Check if we've moved far enough back
-        if (Vector3.Distance(transform.position, originalPosition) > yieldDistance)
-        {
-            // Wait a moment, then resume normal movement
-            StartCoroutine(EndYielding());
-        }
-    }
-
-    private IEnumerator EndYielding()
-    {
-        yield return new WaitForSeconds(1f);
-        isYielding = false;
-        currentSpeed = 0f; // Reset speed for smooth restart
-    }
-
-    private void ForceResume()
-    {
-        collidingWithCar = false;
-        isPaused = false;
-    }
-
-    public void SetWaypoints(Transform[] newWaypoints)
-    {
-        waypoints = newWaypoints;
-        currentWaypointIndex = 1;
-
-        if (waypoints != null && waypoints.Length > 1)
-        {
-            Transform currentWayPoint = waypoints[currentWaypointIndex];
-            Vector3 wayPointDir = (currentWayPoint.position - transform.position).normalized;
-            wayPointDir.y = 0;
-            transform.rotation = Quaternion.LookRotation(wayPointDir);
-        }
-
-        currentSpeed = 0f; // reset speed when setting new path
-    }
-
-    public void Pause() => isPaused = true;
-    public void Resume() => isPaused = false;
 
     private void RotateWheels(float rotationAmount, float steerAngle)
     {
@@ -375,7 +429,10 @@ public class CarMovementController : MonoBehaviour
 
             collidingWithCar = true;
             collisionStartTime = Time.time;
-            Pause();
+            isPaused = true;
+
+            // start/reschedule last progress time so deadlock timer starts from now
+            lastProgressTime = Time.time;
         }
     }
 
@@ -394,7 +451,10 @@ public class CarMovementController : MonoBehaviour
     {
         yield return waitFor;
         collidingWithCar = false;
-        Resume();
+        isPaused = false;
+        // update progress markers
+        lastPosition = transform.position;
+        lastProgressTime = Time.time;
     }
 
     private void OnDrawGizmosSelected()
