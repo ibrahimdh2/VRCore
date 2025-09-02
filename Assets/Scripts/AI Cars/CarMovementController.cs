@@ -278,7 +278,7 @@ public class CarMovementController : MonoBehaviour
                     if (enableDebugLogs)
                         Debug.Log($"{name}: Overshot waypoint {currentWaypointIndex} relative to path segment. Advancing.");
 
-                    currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+                    //currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
 
                     lastPosition = transform.position;
                     lastProgressTime = Time.time;
@@ -293,25 +293,25 @@ public class CarMovementController : MonoBehaviour
             }
 
             // --- ✅ Failsafe: exceeded expected time AND we're close enough (2x tolerance) ---
-            if (expectedTimeToReach > 0f &&
-                Time.time - lastProgressTime > expectedTimeToReach &&
-                distanceSqr < (waypointTolerance * toleranceMultiplier) * (waypointTolerance * toleranceMultiplier))
-            {
-                if (enableDebugLogs)
-                    Debug.Log($"{name}: Failsafe triggered, skipping stuck waypoint {currentWaypointIndex}");
+            //if (expectedTimeToReach > 0f &&
+            //    Time.time - lastProgressTime > expectedTimeToReach &&
+            //    distanceSqr < (waypointTolerance * toleranceMultiplier) * (waypointTolerance * toleranceMultiplier))
+            //{
+            //    if (enableDebugLogs)
+            //        Debug.Log($"{name}: Failsafe triggered, skipping stuck waypoint {currentWaypointIndex}");
 
-                currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+            //   // currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
 
-                lastPosition = transform.position;
-                lastProgressTime = Time.time;
+            //    lastPosition = transform.position;
+            //    lastProgressTime = Time.time;
 
-                float distToNext = (waypoints[currentWaypointIndex].position - transform.position).magnitude;
-                float effectiveSpeed = Mathf.Max(1f, currentMaxSpeed);
-                expectedTimeToReach = distToNext / effectiveSpeed;
+            //    float distToNext = (waypoints[currentWaypointIndex].position - transform.position).magnitude;
+            //    float effectiveSpeed = Mathf.Max(1f, currentMaxSpeed);
+            //    expectedTimeToReach = distToNext / effectiveSpeed;
 
-                yield return null;
-                continue;
-            }
+            //    yield return null;
+            //    continue;
+            //}
 
             // If currently yielding, handle yielding routine (backwards movement + wait)
             if (isYielding)

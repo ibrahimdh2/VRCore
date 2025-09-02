@@ -2,16 +2,28 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+public enum MainFlowDirection
+{
+    ForwardBack,
+    LeftRight
+}
+
 public class TrafficLightsSyncher : MonoBehaviour
 {
+    [Header("Traffic Light Groups")]
     public List<TrafficLight> forwardOnly;
     public List<TrafficLight> rightOnly;
     public List<TrafficLight> leftOnly;
     public List<TrafficLight> back;
 
-    public float greenDuration = 10f;
-    public float yellowDuration = 3f;
-    public float redBuffer = 1f;
+    [Header("Timing Settings")]
+    public float greenDuration = 20f;   // Main lane green
+    public float yellowDuration = 4f;
+    public float redBuffer = 2f;
+    public float sideGreenMultiplier = 0.5f; // Side lanes are shorter
+
+    [Header("Main Flow Setting")]
+    public MainFlowDirection mainFlow = MainFlowDirection.ForwardBack;
 
     private void Start()
     {
@@ -22,49 +34,98 @@ public class TrafficLightsSyncher : MonoBehaviour
     {
         while (true)
         {
-            // Step 1: Forward + Back GREEN
-            SetLights(forwardOnly, LightState.Green);
-            SetLights(back, LightState.Green);
-            SetLights(leftOnly, LightState.Red);
-            SetLights(rightOnly, LightState.Red);
+            if (mainFlow == MainFlowDirection.ForwardBack)
+            {
+                // Step 1: Forward + Back GREEN
+                SetLights(forwardOnly, LightState.Green);
+                SetLights(back, LightState.Green);
+                SetLights(leftOnly, LightState.Red);
+                SetLights(rightOnly, LightState.Red);
 
-            yield return new WaitForSeconds(greenDuration);
+                yield return new WaitForSeconds(greenDuration);
 
-            SetLights(forwardOnly, LightState.Yellow);
-            SetLights(back, LightState.Yellow);
+                SetLights(forwardOnly, LightState.Yellow);
+                SetLights(back, LightState.Yellow);
 
-            yield return new WaitForSeconds(yellowDuration);
+                yield return new WaitForSeconds(yellowDuration);
 
-            SetLights(forwardOnly, LightState.Red);
-            SetLights(back, LightState.Red);
+                SetLights(forwardOnly, LightState.Red);
+                SetLights(back, LightState.Red);
 
-            yield return new WaitForSeconds(redBuffer);
+                yield return new WaitForSeconds(redBuffer);
 
-            // Step 2: Left Turn GREEN
-            SetLights(leftOnly, LightState.Green);
+                // Step 2: Left Turn GREEN
+                SetLights(leftOnly, LightState.Green);
 
-            yield return new WaitForSeconds(greenDuration * 0.5f);
+                yield return new WaitForSeconds(greenDuration * sideGreenMultiplier);
 
-            SetLights(leftOnly, LightState.Yellow);
+                SetLights(leftOnly, LightState.Yellow);
 
-            yield return new WaitForSeconds(yellowDuration);
+                yield return new WaitForSeconds(yellowDuration);
 
-            SetLights(leftOnly, LightState.Red);
+                SetLights(leftOnly, LightState.Red);
 
-            yield return new WaitForSeconds(redBuffer);
+                yield return new WaitForSeconds(redBuffer);
 
-            // Step 3: Right Turn GREEN
-            SetLights(rightOnly, LightState.Green);
+                // Step 3: Right Turn GREEN
+                SetLights(rightOnly, LightState.Green);
 
-            yield return new WaitForSeconds(greenDuration * 0.5f);
+                yield return new WaitForSeconds(greenDuration * sideGreenMultiplier);
 
-            SetLights(rightOnly, LightState.Yellow);
+                SetLights(rightOnly, LightState.Yellow);
 
-            yield return new WaitForSeconds(yellowDuration);
+                yield return new WaitForSeconds(yellowDuration);
 
-            SetLights(rightOnly, LightState.Red);
+                SetLights(rightOnly, LightState.Red);
 
-            yield return new WaitForSeconds(redBuffer);
+                yield return new WaitForSeconds(redBuffer);
+            }
+            else if (mainFlow == MainFlowDirection.LeftRight)
+            {
+                // Step 1: Left + Right GREEN
+                SetLights(leftOnly, LightState.Green);
+                SetLights(rightOnly, LightState.Green);
+                SetLights(forwardOnly, LightState.Red);
+                SetLights(back, LightState.Red);
+
+                yield return new WaitForSeconds(greenDuration);
+
+                SetLights(leftOnly, LightState.Yellow);
+                SetLights(rightOnly, LightState.Yellow);
+
+                yield return new WaitForSeconds(yellowDuration);
+
+                SetLights(leftOnly, LightState.Red);
+                SetLights(rightOnly, LightState.Red);
+
+                yield return new WaitForSeconds(redBuffer);
+
+                // Step 2: Forward GREEN
+                SetLights(forwardOnly, LightState.Green);
+
+                yield return new WaitForSeconds(greenDuration * sideGreenMultiplier);
+
+                SetLights(forwardOnly, LightState.Yellow);
+
+                yield return new WaitForSeconds(yellowDuration);
+
+                SetLights(forwardOnly, LightState.Red);
+
+                yield return new WaitForSeconds(redBuffer);
+
+                // Step 3: Back GREEN
+                SetLights(back, LightState.Green);
+
+                yield return new WaitForSeconds(greenDuration * sideGreenMultiplier);
+
+                SetLights(back, LightState.Yellow);
+
+                yield return new WaitForSeconds(yellowDuration);
+
+                SetLights(back, LightState.Red);
+
+                yield return new WaitForSeconds(redBuffer);
+            }
         }
     }
 
@@ -72,7 +133,8 @@ public class TrafficLightsSyncher : MonoBehaviour
     {
         foreach (TrafficLight light in lights)
         {
-            light.ChangeState(state);
+            if (light != null)
+                light.ChangeState(state);
         }
     }
 }

@@ -197,7 +197,7 @@ MonoBehaviour:
   signalStoppingVehicle: {fileID: 0}
   delayTimeAfterStopping: 3
   yPos: 0.2
-  maxWaitTime: 8
+  maxWaitTime: 3
   yieldDistance: 2
   speedChangeRate: 2
   enableDebugLogs: 0
@@ -205,6 +205,8 @@ MonoBehaviour:
   currentWaypointIndex: 0
   currentSpeed: 0
   currentCollider: {fileID: 5760763399105170551}
+  forceMoveDuration: 1.5
+  forceMoveSpeed: 2
   frontLeftChecBoxCollider: {fileID: 1930908607819151595}
   frontRightCheckBoxCollider: {fileID: 6901131575278911473}
   avoidanceDistance: 0.5
