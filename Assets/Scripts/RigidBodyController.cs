@@ -25,30 +25,62 @@ public class RigidBodyController : MonoBehaviour
     public float maxVisualSteer = 45f;      // max degrees handlebars can turn visually
     public float turnSharpness = 2f;        // higher = sharper real turning
 
+    [Header("Physics Smoothing")]
+    public float velocityForceMultiplier = 10f;  // How aggressively to reach target velocity
+    public float rotationSmoothness = 25f;      // Reduced from 50f for smoother rotation
+
     [Header("Debug")]
     public float handlebarAngle;            // raw VR handlebar angle
     public float straightAngle;
 
     private float wheelRadius = 0.35f; // in meters
+
     [Header("Visual Steering Correction")]
     public float visualSteerMultiplier = 1f;   // scale the visual steering
     public float visualSteerOffset = 0f;       // shift if visuals feel off
+
     public float CurrentAngleRaw { get; private set; }
     public TextMeshProUGUI speedText;
     public TextMeshProUGUI simulationSpeedText;
-   
+
+    // Cached values for FixedUpdate
+    private float cachedHandlebarAngle;
+    private bool hasValidInput;
 
     void Update()
     {
+        // Only handle UI updates and VR input reading in Update
         speedText.text = speedReceiver.speedKph.ToString("f2");
         simulationSpeedText.text = rb.linearVelocity.magnitude.ToString("f2");
-        // Get VR handlebar input
-        if (!TryGetHandlebarYawWrapped(out float wrappedYawDeg))
-            return;
 
-        // Visual steering (direct from VR)
-        CurrentAngleRaw = wrappedYawDeg; // store raw yaw before offset
-        handlebarAngle = (wrappedYawDeg - straightAngle) * turnSensitivity;
+        // Cache VR input for FixedUpdate
+        hasValidInput = TryGetHandlebarYawWrapped(out float wrappedYawDeg);
+
+        if (hasValidInput)
+        {
+            CurrentAngleRaw = wrappedYawDeg;
+            cachedHandlebarAngle = (wrappedYawDeg - straightAngle) * turnSensitivity;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (!hasValidInput) return;
+
+        // Handle visual steering
+        HandleVisualSteering();
+
+        // Handle bike physics
+        HandleMovement();
+        HandleSteering();
+
+        // Spin wheels visually
+        RotateWheels();
+    }
+
+    private void HandleVisualSteering()
+    {
+        handlebarAngle = cachedHandlebarAngle;
 
         // Calculate visual steering separately from bike turning
         float visualAngle = handlebarAngle * visualSteerMultiplier + visualSteerOffset;
@@ -60,35 +92,42 @@ public class RigidBodyController : MonoBehaviour
 
         if (frontFork != null)
             frontFork.localRotation = Quaternion.Euler(0, visualAngle, 0);
-
-        // Calculate effective turning angle for bike body (removed speed reduction)
-        float turningAngle = (visualAngle / maxVisualSteer) * turnSharpness;
-
-        // Rotate bike around pivot
-        if (!(speedReceiver.speedKph < 1))
-        {
-            if (turningPivot != null)
-                transform.RotateAround(turningPivot.position, Vector3.up, turningAngle * Time.deltaTime * 50f);
-            else
-                transform.Rotate(Vector3.up, turningAngle * Time.deltaTime * 50f); 
-        }
-
-        // Spin wheels visually
-        RotateWheels();
     }
 
-    private void FixedUpdate()
+    private void HandleMovement()
     {
-        // Apply forward velocity
-        rb.linearVelocity = transform.forward * multiplier * speedReceiver.speedKph;
-       // Debug.Log($"{rb.linearVelocity}");
+        // Use forces instead of direct velocity assignment for smoother physics
+        Vector3 targetVelocity = transform.forward * multiplier * speedReceiver.speedKph;
+        Vector3 velocityDiff = targetVelocity - rb.linearVelocity;
+
+        // Apply force toward target velocity
+        rb.AddForce(velocityDiff * velocityForceMultiplier, ForceMode.Force);
+    }
+
+    private void HandleSteering()
+    {
+        // Calculate effective turning angle for bike body
+        float visualAngle = handlebarAngle * visualSteerMultiplier + visualSteerOffset;
+        visualAngle = Mathf.Clamp(visualAngle, -maxVisualSteer, maxVisualSteer);
+        float turningAngle = (visualAngle / maxVisualSteer) * turnSharpness;
+
+        // Rotate bike around pivot (smoother rotation)
+        if (!(speedReceiver.speedKph < 1))
+        {
+            float rotationAmount = turningAngle * Time.fixedDeltaTime * rotationSmoothness;
+
+            if (turningPivot != null)
+                transform.RotateAround(turningPivot.position, Vector3.up, rotationAmount);
+            else
+                transform.Rotate(Vector3.up, rotationAmount);
+        }
     }
 
     private void RotateWheels()
     {
         float speedMS = speedReceiver.speedKph / 3.6f; // kph → m/s
         float angularVel = speedMS / wheelRadius;      // rad/s
-        float degPerFrame = angularVel * Mathf.Rad2Deg * Time.deltaTime;
+        float degPerFrame = angularVel * Mathf.Rad2Deg * Time.fixedDeltaTime;
 
         if (frontWheelSpin != null)
             frontWheelSpin.Rotate(Vector3.right, degPerFrame, Space.Self);
@@ -96,7 +135,7 @@ public class RigidBodyController : MonoBehaviour
         if (backWheel != null)
             backWheel.Rotate(Vector3.right, degPerFrame, Space.Self);
     }
-    
+
     private bool TryGetHandlebarYawWrapped(out float angleDeg)
     {
         angleDeg = 0f;
@@ -116,12 +155,13 @@ public class RigidBodyController : MonoBehaviour
 
     private void OnCollisionExit(Collision collision)
     {
-        if(collision.collider.CompareTag("Vehicle"))
+        if (collision.collider.CompareTag("Vehicle"))
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
     }
+
     internal float GetBicycleVelocity()
     {
         return rb.linearVelocity.magnitude * multiplier;

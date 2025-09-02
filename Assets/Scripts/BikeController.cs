@@ -1,6 +1,7 @@
 ﻿using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
+using static BikeController;
 
 public class BikeController : MonoBehaviour
 {
@@ -102,19 +103,21 @@ public class BikeController : MonoBehaviour
         }
     }
 
+    private float turnAngle;
     void Update()
     {
         moveSpeed = receiver.speedKph;
         speedText.text = $"{moveSpeed:F2} km/h";
 
-        float turnAngle = CalculateHandlebarAngle();
-        ApplySteering(turnAngle);
-        UpdateWheelVisuals();
-        ApplyMotorForce();
+        turnAngle = CalculateHandlebarAngle();
+        
     }
 
     void FixedUpdate()
     {
+        ApplySteering(turnAngle);
+        UpdateWheelVisuals();
+        ApplyMotorForce();
         AddBikeStability();
         AddUprightForce();
         LimitExtremeMovements();

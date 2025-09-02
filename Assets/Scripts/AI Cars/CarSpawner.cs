@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class CarSpawner : MonoBehaviour
@@ -13,6 +13,10 @@ public class CarSpawner : MonoBehaviour
     public float spawnClearRadius = 2f; // clearance around spawn point
     public float forwardOffsetMin = 1f; // extra spacing along spawn forward
     public float forwardOffsetMax = 3f;
+
+    [Header("Car Limit Settings")]
+    public bool limitCars = false;     // ✅ new toggle
+    public int maxActiveCars = 15;     // ✅ adjustable limit
 
     void Start()
     {
@@ -34,7 +38,6 @@ public class CarSpawner : MonoBehaviour
             timeAccumulator += Time.deltaTime;
 
             float carsToSpawn = spawnRatePerSecond * timeAccumulator;
-
             if (carsToSpawn >= 1f)
             {
                 int fullCars = Mathf.FloorToInt(carsToSpawn);
@@ -42,8 +45,11 @@ public class CarSpawner : MonoBehaviour
 
                 for (int i = 0; i < fullCars; i++)
                 {
-                    GameObject car = VehiclePoolManager.Instance.GetRandomCar();
+                    // ✅ Check car limit
+                    if (limitCars && CountActiveCars() >= maxActiveCars)
+                        continue;
 
+                    GameObject car = VehiclePoolManager.Instance.GetRandomCar();
                     if (car == null)
                     {
                         Debug.LogWarning("Car pool exhausted.");
@@ -64,16 +70,15 @@ public class CarSpawner : MonoBehaviour
                     // Check if spawn area is clear
                     if (!IsSpawnAreaClear(spawnPoint.position, spawnClearRadius))
                     {
-                        // area blocked, return car to pool
                         VehiclePoolManager.Instance.ReturnCar(car);
                         continue;
                     }
 
-                    // Add a little random forward offset to avoid stacking
+                    // Add random forward offset to avoid stacking
                     Vector3 spawnPos = spawnPoint.position + spawnPoint.forward * Random.Range(forwardOffsetMin, forwardOffsetMax);
-
                     car.transform.position = spawnPos;
                     car.transform.rotation = spawnPoint.rotation;
+
                     car.SetActive(true);
 
                     CarMovementController controller = car.GetComponent<CarMovementController>();
@@ -92,10 +97,26 @@ public class CarSpawner : MonoBehaviour
         foreach (var hit in hits)
         {
             if (hit.CompareTag("Vehicle"))
-            {// Debug.Log("Car is there don't spawn another"); 
-                return false; }
+            {
+                return false;
+            }
         }
         return true;
+    }
+
+    /// <summary>
+    /// Counts currently active cars in the scene.
+    /// </summary>
+    private int CountActiveCars()
+    {
+        GameObject[] cars = GameObject.FindGameObjectsWithTag("Vehicle");
+        int count = 0;
+        foreach (var car in cars)
+        {
+            if (car.activeInHierarchy)
+                count++;
+        }
+        return count;
     }
 
     // Optional: Draw spawn clearance gizmo
@@ -104,9 +125,7 @@ public class CarSpawner : MonoBehaviour
         Gizmos.color = Color.green;
         if (spawnPointSameDirection != null)
             Gizmos.DrawWireSphere(spawnPointSameDirection.position, spawnClearRadius);
-
         if (spawnPointOppositeDirection != null)
             Gizmos.DrawWireSphere(spawnPointOppositeDirection.position, spawnClearRadius);
     }
-
 }

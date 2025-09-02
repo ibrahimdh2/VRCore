@@ -210,8 +210,20 @@ public class CarMovementController : MonoBehaviour
     {
         if (waypoints == null || waypoints.Length == 0) yield break;
 
+        // Local, method-scoped helpers (no new fields required)
+        float expectedTimeToReach = 0f;             // seconds
+        const float toleranceMultiplier = 2f;       // close-enough radius = 2x tolerance
+
         lastPosition = transform.position;
         lastProgressTime = Time.time;
+
+        // Initialize expected time for the first target
+        {
+            Transform initTarget = waypoints[currentWaypointIndex];
+            float dist = Vector3.Distance(transform.position, initTarget.position);
+            float effectiveSpeed = Mathf.Max(1f, currentMaxSpeed); // avoid divide-by-zero & too-small speeds
+            expectedTimeToReach = dist / effectiveSpeed;
+        }
 
         while (true)
         {
@@ -219,21 +231,84 @@ public class CarMovementController : MonoBehaviour
 
             Transform target = waypoints[currentWaypointIndex];
             Vector3 toTarget = target.position - transform.position;
-            toTarget.y = 0;
-            float distance = toTarget.magnitude;
+            toTarget.y = 0f;
+            float distanceSqr = toTarget.sqrMagnitude;
 
-            // If reached waypoint -> switch
-            if (distance < waypointTolerance)
+            // --- Primary waypoint switch (same as before) ---
+            if (distanceSqr < waypointTolerance * waypointTolerance)
             {
                 if (currentWaypointIndex + 1 > waypoints.Length - 1)
                 {
                     VehiclePoolManager.Instance.ReturnCar(this.gameObject);
-                    //Debug.Log("Should return to the pool");
                 }
+
                 currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
-                // reset progress tracking so we don't false-detect deadlock immediately
+
+                // reset progress tracking
                 lastPosition = transform.position;
                 lastProgressTime = Time.time;
+
+                // ✅ Recalculate expected time to reach the new waypoint
+                float distToNext = (waypoints[currentWaypointIndex].position - transform.position).magnitude;
+                float effectiveSpeed = Mathf.Max(1f, currentMaxSpeed);
+                expectedTimeToReach = distToNext / effectiveSpeed;
+
+                yield return null;
+                continue;
+            }
+
+            // --- NEW: robust overshoot check (relative to path segment), safe for U-turns ---
+            // If we've crossed the perpendicular plane through the current waypoint in the
+            // direction from prev->current, then we've "passed" it and can advance.
+            {
+                int prevIdx = (currentWaypointIndex - 1 + waypoints.Length) % waypoints.Length;
+                Vector3 prevToCurr = waypoints[currentWaypointIndex].position - waypoints[prevIdx].position;
+                prevToCurr.y = 0f;
+
+                // If dot( currentWP - carPos, segmentDir ) < 0 => we've moved beyond the waypoint plane
+                float planeSide = Vector3.Dot(
+                    waypoints[currentWaypointIndex].position - transform.position,
+                    prevToCurr.sqrMagnitude > 0.0001f ? prevToCurr.normalized : Vector3.forward
+                );
+
+                bool overshotSegment = planeSide < 0f;
+
+                if (overshotSegment)
+                {
+                    if (enableDebugLogs)
+                        Debug.Log($"{name}: Overshot waypoint {currentWaypointIndex} relative to path segment. Advancing.");
+
+                    currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+
+                    lastPosition = transform.position;
+                    lastProgressTime = Time.time;
+
+                    float distToNext = (waypoints[currentWaypointIndex].position - transform.position).magnitude;
+                    float effectiveSpeed = Mathf.Max(1f, currentMaxSpeed);
+                    expectedTimeToReach = distToNext / effectiveSpeed;
+
+                    yield return null;
+                    continue;
+                }
+            }
+
+            // --- ✅ Failsafe: exceeded expected time AND we're close enough (2x tolerance) ---
+            if (expectedTimeToReach > 0f &&
+                Time.time - lastProgressTime > expectedTimeToReach &&
+                distanceSqr < (waypointTolerance * toleranceMultiplier) * (waypointTolerance * toleranceMultiplier))
+            {
+                if (enableDebugLogs)
+                    Debug.Log($"{name}: Failsafe triggered, skipping stuck waypoint {currentWaypointIndex}");
+
+                currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+
+                lastPosition = transform.position;
+                lastProgressTime = Time.time;
+
+                float distToNext = (waypoints[currentWaypointIndex].position - transform.position).magnitude;
+                float effectiveSpeed = Mathf.Max(1f, currentMaxSpeed);
+                expectedTimeToReach = distToNext / effectiveSpeed;
+
                 yield return null;
                 continue;
             }
@@ -242,10 +317,8 @@ public class CarMovementController : MonoBehaviour
             if (isYielding)
             {
                 HandleYieldingStep();
-                // small check to avoid being stuck in yield forever (safety timeout)
                 if (Time.time - lastProgressTime > maxWaitTime + 2f)
                 {
-                    // End yielding forcibly
                     EndYieldingImmediate();
                 }
                 yield return null;
@@ -256,21 +329,19 @@ public class CarMovementController : MonoBehaviour
             Vector3 currentDir = transform.forward;
             float angleToTarget = Vector3.Angle(currentDir, toTarget.normalized);
 
-            // --- Obstacle & pausing checks (similar to HandlePausing) ---
+            // --- Obstacle & pausing checks (existing logic preserved) ---
             bool shouldPause = false;
-            // Check immediate collisions that were detected via OnCollisionEnter
+
             if (collidingWithCar)
             {
                 shouldPause = true;
             }
             else
             {
-                // Modified forward boxcast using detection collider parameters
+                // Forward boxcast using detection collider parameters
                 Vector3 boxCenter = GetDetectionBoxCenter();
                 Vector3 halfExtents = GetDetectionBoxSize();
                 Quaternion orientation = GetDetectionBoxOrientation();
-
-
 
                 if (Physics.BoxCast(boxCenter, halfExtents, transform.forward, out RaycastHit hit, orientation, boxcastLength))
                 {
@@ -281,126 +352,84 @@ public class CarMovementController : MonoBehaviour
                 }
                 else if (checkFrontLeftAndRightAvoidBicycle)
                 {
-          
+                    Vector3 leftBoxCenter = GetDetectionBoxCenter(frontLeftChecBoxCollider);
+                    Vector3 leftBoxHalfExtents = GetDetectionBoxSize(frontLeftChecBoxCollider);
+                    Quaternion leftOrientation = GetDetectionBoxOrientation(frontLeftChecBoxCollider);
 
-                    
-                        Vector3 leftBoxCenter = GetDetectionBoxCenter(frontLeftChecBoxCollider);
-                        Vector3 leftBoxHalfExtents = GetDetectionBoxSize(frontLeftChecBoxCollider);
-                        Quaternion leftOrientation = GetDetectionBoxOrientation(frontLeftChecBoxCollider);
+                    Vector3 rightBoxCenter = GetDetectionBoxCenter(frontRightCheckBoxCollider);
+                    Vector3 rightBoxHalfExtents = GetDetectionBoxSize(frontRightCheckBoxCollider);
+                    Quaternion rightOrientation = GetDetectionBoxOrientation(frontRightCheckBoxCollider);
 
-                        Vector3 rightBoxCenter = GetDetectionBoxCenter(frontRightCheckBoxCollider);
-                        Vector3 rightBoxHalfExtents = GetDetectionBoxSize(frontRightCheckBoxCollider);
-                        Quaternion rightOrientation = GetDetectionBoxOrientation(frontRightCheckBoxCollider);
+                    bool leftHasBicycle = false;
+                    bool rightHasBicycle = false;
+                    bool leftHasVehicle = false;
+                    bool rightHasVehicle = false;
 
-                        bool leftHasBicycle = false;
-                        bool rightHasBicycle = false;
-                        bool leftHasVehicle = false;
-                        bool rightHasVehicle = false;
-
-                        // Check left side
-                        if (Physics.BoxCast(leftBoxCenter, leftBoxHalfExtents, transform.forward, out RaycastHit leftHit, leftOrientation, leftRightBoxCastRayLength))
-                        {
-                            if (leftHit.collider == bicycleCollider)
-                                leftHasBicycle = true;
-                            else if (leftHit.collider.CompareTag("Vehicle"))
-                                leftHasVehicle = true;
-                        }
-
-                        // Check right side
-                        if (Physics.BoxCast(rightBoxCenter, rightBoxHalfExtents, transform.forward, out RaycastHit rightHit, rightOrientation, leftRightBoxCastRayLength))
-                        {
-                            if (rightHit.collider == bicycleCollider)
-                                rightHasBicycle = true;
-                            else if (rightHit.collider.CompareTag("Vehicle"))
-                                rightHasVehicle = true;
-                        }
-
-                        // Decision logic
-                        if (leftHasBicycle && rightHasBicycle)
-                        {
-                            // Bicycles on both sides → stop
-                            shouldPause = true;
-                        Debug.Log($"Left and right both has bicycle so stop");
-                        }
-                        else if (leftHasBicycle && !rightHasVehicle)
-                        {
-                            // Bicycle on left, right is clear → sidestep right
-                            Vector3 avoidanceOffset = transform.right * avoidanceDistance * Time.deltaTime;
-                            transform.position += avoidanceOffset;
-
-                            // Reset progress tracking after successful avoidance
-                            lastPosition = transform.position;
-                            lastProgressTime = Time.time;
-                        Debug.Log($"Left has bicycle right doesn't  have vehicle");
-                    }
-                        else if (rightHasBicycle && !leftHasVehicle)
-                        {
-                            // Bicycle on right, left is clear → sidestep left
-                            Vector3 avoidanceOffset = -transform.right * avoidanceDistance * Time.deltaTime;
-                            transform.position += avoidanceOffset;
-
-                            // Reset progress tracking after successful avoidance
-                            lastPosition = transform.position;
-                            lastProgressTime = Time.time;
-                        Debug.Log($"Right has bicycle left doesn't have vehicle");
-                    }
-                        else if ((leftHasBicycle && rightHasVehicle) || (rightHasBicycle && leftHasVehicle))
-                        {
-                        // Bicycle on one side, vehicle blocking the other → stop
-                        Debug.Log("Both sides have vehicles so sotp");
-                            shouldPause = true;
-                        }
-
-
-                }
-
-
-                // NEW: Turn detection boxcast
-                if (!shouldPause && enableTurnDetection)
-                {
-                    // Only check turn direction if we're making a significant turn
-                    if (angleToTarget > turnDetectionAngleThreshold)
+                    // Left side
+                    if (Physics.BoxCast(leftBoxCenter, leftBoxHalfExtents, transform.forward, out RaycastHit leftHit, leftOrientation, leftRightBoxCastRayLength))
                     {
-                        Transform currentWayPoint = waypoints[currentWaypointIndex];
-                        Vector3 turnDirection = (currentWayPoint.position - transform.position).normalized;
+                        if (leftHit.collider == bicycleCollider) leftHasBicycle = true;
+                        else if (leftHit.collider.CompareTag("Vehicle")) leftHasVehicle = true;
+                    }
 
-                        // Cast from both left and right origins
-                        Transform[] rayOrigins = new Transform[]
-                        {
-                            leftTurnRayCastStartingPoint,
-                            rightTurnRayCastStartingPoint
-                        };
+                    // Right side
+                    if (Physics.BoxCast(rightBoxCenter, rightBoxHalfExtents, transform.forward, out RaycastHit rightHit, rightOrientation, leftRightBoxCastRayLength))
+                    {
+                        if (rightHit.collider == bicycleCollider) rightHasBicycle = true;
+                        else if (rightHit.collider.CompareTag("Vehicle")) rightHasVehicle = true;
+                    }
 
-                        foreach (var rayOrigin in rayOrigins)
-                        {
-                            if (Physics.Raycast(rayOrigin.position, turnDirection, out RaycastHit turnHit, rayDistance))
-                            {
-                                // Debug ray visualization
-                                Debug.DrawRay(rayOrigin.position,
-                                    turnDirection * rayDistance,
-                                    turnHit.collider.CompareTag("Vehicle") ? Color.red : Color.yellow,
-                                    0.1f);
-
-                                if (turnHit.collider.CompareTag("Vehicle") && turnHit.collider != currentCollider)
-                                {
-                                    shouldPause = true;
-                                    if (enableDebugLogs)
-                                        Debug.Log($"{gameObject.name}: Turn detection - Vehicle detected in turn direction from {rayOrigin.name}");
-                                    break; // Stop checking once we found a blocking vehicle
-                                }
-                            }
-                            else
-                            {
-                                // Draw ray even when nothing is hit (for debugging)
-                                Debug.DrawRay(rayOrigin.position,
-                                    turnDirection * rayDistance,
-                                    Color.green,
-                                    0.1f);
-                            }
-                        }
+                    if (leftHasBicycle && rightHasBicycle)
+                    {
+                        shouldPause = true;
+                        if (enableDebugLogs) Debug.Log("Bicycles on both sides — stopping.");
+                    }
+                    else if (leftHasBicycle && !rightHasVehicle)
+                    {
+                        transform.position += transform.right * (avoidanceDistance * Time.deltaTime);
+                        lastPosition = transform.position;
+                        lastProgressTime = Time.time;
+                    }
+                    else if (rightHasBicycle && !leftHasVehicle)
+                    {
+                        transform.position -= transform.right * (avoidanceDistance * Time.deltaTime);
+                        lastPosition = transform.position;
+                        lastProgressTime = Time.time;
+                    }
+                    else if ((leftHasBicycle && rightHasVehicle) || (rightHasBicycle && leftHasVehicle))
+                    {
+                        shouldPause = true;
                     }
                 }
 
+                // Turn detection rays (unchanged)
+                if (!shouldPause && enableTurnDetection && angleToTarget > turnDetectionAngleThreshold)
+                {
+                    Transform currentWayPoint = waypoints[currentWaypointIndex];
+                    Vector3 turnDirection = (currentWayPoint.position - transform.position).normalized;
+
+                    Transform[] rayOrigins = { leftTurnRayCastStartingPoint, rightTurnRayCastStartingPoint };
+                    foreach (var rayOrigin in rayOrigins)
+                    {
+                        if (Physics.Raycast(rayOrigin.position, turnDirection, out RaycastHit turnHit, rayDistance))
+                        {
+                            Debug.DrawRay(rayOrigin.position, turnDirection * rayDistance,
+                                turnHit.collider.CompareTag("Vehicle") ? Color.red : Color.yellow, 0.1f);
+
+                            if (turnHit.collider.CompareTag("Vehicle") && turnHit.collider != currentCollider)
+                            {
+                                shouldPause = true;
+                                if (enableDebugLogs)
+                                    Debug.Log($"{gameObject.name}: Turn detection — vehicle ahead from {rayOrigin.name}");
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            Debug.DrawRay(rayOrigin.position, turnDirection * rayDistance, Color.green, 0.1f);
+                        }
+                    }
+                }
             }
 
             // Traffic signal check
@@ -414,57 +443,41 @@ public class CarMovementController : MonoBehaviour
 
             if (isPaused)
             {
-                // Deadlock detection: if no meaningful movement for maxWaitTime -> resolve
+                // Deadlock detection (unchanged)
                 if (Vector3.Distance(transform.position, lastPosition) > 0.1f)
                 {
-                    // we made progress
                     lastPosition = transform.position;
                     lastProgressTime = Time.time;
                 }
-                else
+                else if (Time.time - lastProgressTime > maxWaitTime)
                 {
-                    if (Time.time - lastProgressTime > maxWaitTime)
-                    {
-                        if (enableDebugLogs) Debug.Log($"{gameObject.name}: Deadlock suspected, resolving...");
-                        ResolveDeadlock();
-                        // update progress time to avoid immediate repeat
-                        lastProgressTime = Time.time;
-                    }
+                    if (enableDebugLogs) Debug.Log($"{gameObject.name}: Deadlock suspected, resolving...");
+                    ResolveDeadlock();
+                    lastProgressTime = Time.time;
                 }
 
                 yield return null;
                 continue;
             }
 
-            // --- Movement and steering when not paused ---
-            // Use the already calculated direction & angle
+            // --- Movement & steering (unchanged) ---
+            float targetSpeed = angleToTarget > sharpTurnAngle ? currentMaxSpeed * 0.5f : currentMaxSpeed;
 
-            // Adaptive speed target (sharp turn => slow down)
-            float targetSpeed;
-            if (angleToTarget > sharpTurnAngle)
-                targetSpeed = currentMaxSpeed * 0.5f;
-            else
-                targetSpeed = currentMaxSpeed;
-
-            // Smooth speed change
             if (currentSpeed < targetSpeed)
                 currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
             else
                 currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, brakingForce * Time.deltaTime);
 
-            // Adaptive turning
             float turnMultiplier = Mathf.Lerp(0.3f, 1f, angleToTarget / 90f);
             Quaternion targetRot = Quaternion.LookRotation(toTarget.normalized);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, rotationSpeed * turnMultiplier * Time.deltaTime);
 
-            // Move forward
             transform.position += transform.forward * currentSpeed * Time.deltaTime;
 
-            // Wheel animation
             float wheelRotationAmount = currentSpeed * 360f * Time.deltaTime;
             RotateWheels(wheelRotationAmount, angleToTarget);
 
-            // Update progress time because we moved
+            // Progress tracking (unchanged)
             if (Vector3.Distance(transform.position, lastPosition) > 0.05f)
             {
                 lastPosition = transform.position;
@@ -473,10 +486,8 @@ public class CarMovementController : MonoBehaviour
 
             yield return null;
         }
-
-        // When loop ends (no waypoints), return car to pool if you want that behavior:
-        // VehiclePoolManager.Instance.ReturnCar(gameObject);
     }
+
 
     private void HandleYieldingStep()
     {
