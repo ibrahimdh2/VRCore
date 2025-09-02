@@ -20,9 +20,12 @@ public class VehiclePoolManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        
+    }
+    private void Start()
+    {
         InitializePool();
     }
-
     void InitializePool()
     {
         foreach (CarPool pool in carTypes)

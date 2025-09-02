@@ -78,6 +78,10 @@ public class CarMovementController : MonoBehaviour
     private BoxCollider bicycleCollider;
     [SerializeField] private BoxCollider frontLeftChecBoxCollider;
     [SerializeField] private BoxCollider frontRightCheckBoxCollider;
+    private int leftRightBoxCastRayLength;
+    public float avoidanceDistance;
+    public bool checkFrontLeftAndRightAvoidBicycle;
+
     void Awake()
     {
         bicycleCollider = DataManager.Instance.bikeCollider;
@@ -266,6 +270,8 @@ public class CarMovementController : MonoBehaviour
                 Vector3 halfExtents = GetDetectionBoxSize();
                 Quaternion orientation = GetDetectionBoxOrientation();
 
+
+
                 if (Physics.BoxCast(boxCenter, halfExtents, transform.forward, out RaycastHit hit, orientation, boxcastLength))
                 {
                     if (hit.collider.CompareTag("Vehicle"))
@@ -273,6 +279,81 @@ public class CarMovementController : MonoBehaviour
                         shouldPause = true;
                     }
                 }
+                else if (checkFrontLeftAndRightAvoidBicycle)
+                {
+          
+
+                    
+                        Vector3 leftBoxCenter = GetDetectionBoxCenter(frontLeftChecBoxCollider);
+                        Vector3 leftBoxHalfExtents = GetDetectionBoxSize(frontLeftChecBoxCollider);
+                        Quaternion leftOrientation = GetDetectionBoxOrientation(frontLeftChecBoxCollider);
+
+                        Vector3 rightBoxCenter = GetDetectionBoxCenter(frontRightCheckBoxCollider);
+                        Vector3 rightBoxHalfExtents = GetDetectionBoxSize(frontRightCheckBoxCollider);
+                        Quaternion rightOrientation = GetDetectionBoxOrientation(frontRightCheckBoxCollider);
+
+                        bool leftHasBicycle = false;
+                        bool rightHasBicycle = false;
+                        bool leftHasVehicle = false;
+                        bool rightHasVehicle = false;
+
+                        // Check left side
+                        if (Physics.BoxCast(leftBoxCenter, leftBoxHalfExtents, transform.forward, out RaycastHit leftHit, leftOrientation, leftRightBoxCastRayLength))
+                        {
+                            if (leftHit.collider == bicycleCollider)
+                                leftHasBicycle = true;
+                            else if (leftHit.collider.CompareTag("Vehicle"))
+                                leftHasVehicle = true;
+                        }
+
+                        // Check right side
+                        if (Physics.BoxCast(rightBoxCenter, rightBoxHalfExtents, transform.forward, out RaycastHit rightHit, rightOrientation, leftRightBoxCastRayLength))
+                        {
+                            if (rightHit.collider == bicycleCollider)
+                                rightHasBicycle = true;
+                            else if (rightHit.collider.CompareTag("Vehicle"))
+                                rightHasVehicle = true;
+                        }
+
+                        // Decision logic
+                        if (leftHasBicycle && rightHasBicycle)
+                        {
+                            // Bicycles on both sides → stop
+                            shouldPause = true;
+                        Debug.Log($"Left and right both has bicycle so stop");
+                        }
+                        else if (leftHasBicycle && !rightHasVehicle)
+                        {
+                            // Bicycle on left, right is clear → sidestep right
+                            Vector3 avoidanceOffset = transform.right * avoidanceDistance * Time.deltaTime;
+                            transform.position += avoidanceOffset;
+
+                            // Reset progress tracking after successful avoidance
+                            lastPosition = transform.position;
+                            lastProgressTime = Time.time;
+                        Debug.Log($"Left has bicycle right doesn't  have vehicle");
+                    }
+                        else if (rightHasBicycle && !leftHasVehicle)
+                        {
+                            // Bicycle on right, left is clear → sidestep left
+                            Vector3 avoidanceOffset = -transform.right * avoidanceDistance * Time.deltaTime;
+                            transform.position += avoidanceOffset;
+
+                            // Reset progress tracking after successful avoidance
+                            lastPosition = transform.position;
+                            lastProgressTime = Time.time;
+                        Debug.Log($"Right has bicycle left doesn't have vehicle");
+                    }
+                        else if ((leftHasBicycle && rightHasVehicle) || (rightHasBicycle && leftHasVehicle))
+                        {
+                        // Bicycle on one side, vehicle blocking the other → stop
+                        Debug.Log("Both sides have vehicles so sotp");
+                            shouldPause = true;
+                        }
+
+
+                }
+
 
                 // NEW: Turn detection boxcast
                 if (!shouldPause && enableTurnDetection)
