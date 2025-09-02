@@ -577,6 +577,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8631758155456043254}
+  - {fileID: 6387176325686202084}
   - {fileID: 2502675990544145791}
   - {fileID: 6369508078217839281}
   - {fileID: 1098811562935776522}
@@ -607,6 +608,10 @@ MonoBehaviour:
   detectionCollider: {fileID: 791567691266483295}
   raycastLength: 10
   boxcastLength: 1
+  intersectionDetectionCollider: {fileID: 8027585981666897229}
+  intersectionBoxcastLength: 3
+  intersectionSafetyDuration: 3
+  enableIntersectionSafety: 1
   turnDetectionAngleThreshold: 5
   turnBoxcastLength: 3
   enableTurnDetection: 1
@@ -616,7 +621,7 @@ MonoBehaviour:
   signalStoppingVehicle: {fileID: 0}
   delayTimeAfterStopping: 3
   yPos: 0.21
-  maxWaitTime: 3
+  maxWaitTime: 15
   yieldDistance: 2
   speedChangeRate: 2
   enableDebugLogs: 0
@@ -624,9 +629,7 @@ MonoBehaviour:
   currentWaypointIndex: 0
   currentSpeed: 0
   currentCollider: {fileID: 7615613077229417303}
-  forceMoveDuration: 1.5
-  forceMoveSpeed: 2
-  frontLeftChecBoxCollider: {fileID: 2905568095258961677}
+  frontLeftCheckBoxCollider: {fileID: 0}
   frontRightCheckBoxCollider: {fileID: 8971364181983733477}
   avoidanceDistance: 0.5
   checkFrontLeftAndRightAvoidBicycle: 1
@@ -871,6 +874,68 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &5769896056472479336
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6387176325686202084}
+  - component: {fileID: 5536115403169369908}
+  - component: {fileID: 8027585981666897229}
+  m_Layer: 0
+  m_Name: BiggerFrontBoxCast
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6387176325686202084
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5769896056472479336}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.000000037748954, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1.102, y: 0.14, z: 0.26}
+  m_LocalScale: {x: 79.30954, y: 93.729996, z: 93.729996}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4376825682421224610}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &5536115403169369908
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5769896056472479336}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!65 &8027585981666897229
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5769896056472479336}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.12, y: 0.011087062, z: 0.02712099}
+  m_Center: {x: 0.01372932, y: 0.0043581347, z: 0.016801946}
 --- !u!1 &5971769879232354708
 GameObject:
   m_ObjectHideFlags: 0
@@ -1008,7 +1073,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &8631758155456043254
 Transform:
   m_ObjectHideFlags: 0
@@ -1018,8 +1083,8 @@ Transform:
   m_GameObject: {fileID: 6489269150216544963}
   serializedVersion: 2
   m_LocalRotation: {x: -0.000000037748954, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1.3, y: 0.14, z: 0.26}
-  m_LocalScale: {x: 93.729996, y: 93.729996, z: 93.729996}
+  m_LocalPosition: {x: -0.21771, y: 0.14, z: 0.26}
+  m_LocalScale: {x: 14.89932, y: 93.729996, z: 93.729996}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4376825682421224610}
@@ -1049,9 +1114,9 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.018846247, y: 0.011087062, z: 0.02712099}
+  m_Size: {x: 0.12, y: 0.011087062, z: 0.02712099}
   m_Center: {x: 0.01372932, y: 0.0043581347, z: 0.016801946}
 --- !u!1 &7747036752016421941
 GameObject:
