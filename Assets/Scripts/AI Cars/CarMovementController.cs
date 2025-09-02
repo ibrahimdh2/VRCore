@@ -18,9 +18,9 @@ public class CarMovementController : MonoBehaviour
     public Transform rearRightWheel;
 
     [Header("Detection Settings")]
+    public BoxCollider detectionCollider; // Reference to the disabled child collider for detection
     public float raycastLength = 5f;
-    public Vector3 halfExtents = new Vector3(0.5f, 0.5f, 0.5f);
-    public Vector3 boxOffset = Vector3.zero;
+    public float boxcastLength = 1f;
 
     [Header("Turn Detection Settings")]
     public float turnDetectionAngleThreshold = 10f; // Minimum angle to trigger turn detection
@@ -29,6 +29,7 @@ public class CarMovementController : MonoBehaviour
     public Transform leftTurnRayCastStartingPoint;
     public Transform rightTurnRayCastStartingPoint;
     public float rayDistance;
+
     [Header("Stop/Signal Settings")]
     public SignalStoppingVehicle signalStoppingVehicle;
     public float delayTimeAfterStopping = 4f;
@@ -88,11 +89,71 @@ public class CarMovementController : MonoBehaviour
         // Initialize speed control
         targetMaxSpeed = maxSpeed;
         currentMaxSpeed = maxSpeed;
+
+        // Setup detection collider
+        SetupDetectionCollider();
     }
 
     void Start()
     {
         // nothing here; coroutine starts when waypoints assigned
+    }
+
+    private void SetupDetectionCollider()
+    {
+        if (detectionCollider != null)
+        {
+            // Ensure the detection collider is disabled
+            detectionCollider.enabled = false;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"{gameObject.name}: Detection collider setup - Size: {detectionCollider.size}, Center: {detectionCollider.center}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"{gameObject.name}: No detection collider assigned! Please assign a disabled BoxCollider child object.");
+        }
+    }
+
+    private Vector3 GetDetectionBoxCenter()
+    {
+        if (detectionCollider == null)
+        {
+            // Fallback to original behavior if no collider is assigned
+            return transform.position + Vector3.up * 0.5f;
+        }
+
+        // Get the world position of the collider's center
+        Vector3 localCenter = detectionCollider.center;
+        Vector3 worldCenter = detectionCollider.transform.TransformPoint(localCenter);
+        return worldCenter;
+    }
+
+    private Vector3 GetDetectionBoxSize()
+    {
+        if (detectionCollider == null)
+        {
+            // Fallback to original behavior if no collider is assigned
+            return new Vector3(0.5f, 0.5f, 0.5f);
+        }
+
+        // Get the world-space size of the collider
+        Vector3 localSize = detectionCollider.size;
+        Vector3 lossyScale = detectionCollider.transform.lossyScale;
+        Vector3 worldSize = Vector3.Scale(localSize, lossyScale) * 0.5f; // BoxCast uses half-extents
+        return worldSize;
+    }
+
+    private Quaternion GetDetectionBoxOrientation()
+    {
+        if (detectionCollider == null)
+        {
+            return transform.rotation;
+        }
+
+        return detectionCollider.transform.rotation;
     }
 
     private void FixedUpdate()
@@ -146,7 +207,7 @@ public class CarMovementController : MonoBehaviour
                 yield return null;
                 continue;
             }
-            
+
             // --- Calculate direction and angle for both movement and detection ---
             Vector3 currentDir = transform.forward;
             float angleToTarget = Vector3.Angle(currentDir, toTarget.normalized);
@@ -160,10 +221,12 @@ public class CarMovementController : MonoBehaviour
             }
             else
             {
-                // Original forward boxcast
-                Vector3 boxCenter = transform.position + boxOffset + Vector3.up * 0.5f;
-                Quaternion orientation = transform.rotation;
-                if (Physics.BoxCast(boxCenter, halfExtents, transform.forward, out RaycastHit hit, orientation, raycastLength))
+                // Modified forward boxcast using detection collider parameters
+                Vector3 boxCenter = GetDetectionBoxCenter();
+                Vector3 halfExtents = GetDetectionBoxSize();
+                Quaternion orientation = GetDetectionBoxOrientation();
+
+                if (Physics.BoxCast(boxCenter, halfExtents, transform.forward, out RaycastHit hit, orientation, boxcastLength))
                 {
                     if (hit.collider.CompareTag("Vehicle"))
                     {
@@ -183,8 +246,8 @@ public class CarMovementController : MonoBehaviour
                         // Cast from both left and right origins
                         Transform[] rayOrigins = new Transform[]
                         {
-            leftTurnRayCastStartingPoint,
-            rightTurnRayCastStartingPoint
+                            leftTurnRayCastStartingPoint,
+                            rightTurnRayCastStartingPoint
                         };
 
                         foreach (var rayOrigin in rayOrigins)
@@ -323,6 +386,7 @@ public class CarMovementController : MonoBehaviour
         lastPosition = transform.position;
         lastProgressTime = Time.time;
     }
+
     public bool IsRight(Vector3 origin, Vector3 forward, Vector3 target)
     {
         Vector3 toTarget = target - origin;
@@ -333,8 +397,6 @@ public class CarMovementController : MonoBehaviour
         return crossY < 0f; // negative => right, positive => left
     }
 
-   
-  
     private void EndYieldingImmediate()
     {
         isYielding = false;
@@ -534,20 +596,34 @@ public class CarMovementController : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
+        if (detectionCollider == null) return;
+
         Gizmos.color = Color.red;
-        Vector3 boxCenter = transform.position + boxOffset + Vector3.up * 0.5f;
-        Quaternion orientation = transform.rotation;
 
-        // Draw original forward detection box
-        Matrix4x4 rotationMatrix = Matrix4x4.TRS(boxCenter + transform.forward * raycastLength * 0.5f, orientation, Vector3.one);
+        // Get detection box parameters from the assigned collider
+        Vector3 boxCenter = GetDetectionBoxCenter();
+        Vector3 halfExtents = GetDetectionBoxSize();
+        Quaternion orientation = GetDetectionBoxOrientation();
+
+        // Draw the detection box extending forward by raycastLength
+        Vector3 castDirection = transform.forward;
+        Vector3 castEndCenter = boxCenter + castDirection * boxcastLength;
+
+        // Draw the box at the end of the cast
+        Matrix4x4 rotationMatrix = Matrix4x4.TRS(castEndCenter, orientation, Vector3.one);
         Gizmos.matrix = rotationMatrix;
-        Gizmos.DrawWireCube(Vector3.zero, halfExtents * 2 + new Vector3(0, 0, raycastLength));
+        Gizmos.DrawWireCube(Vector3.zero, halfExtents * 2);
 
-        // Draw turn detection box if enabled and we have waypoints
-        if (enableTurnDetection && waypoints != null && waypoints.Length > 0 && currentWaypointIndex < waypoints.Length)
-        {
+        // Draw a line showing the cast direction
+        Gizmos.matrix = Matrix4x4.identity;
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(boxCenter, castEndCenter);
 
-        }
+        // Draw the starting box position
+        Gizmos.color = Color.green;
+        rotationMatrix = Matrix4x4.TRS(boxCenter, orientation, Vector3.one);
+        Gizmos.matrix = rotationMatrix;
+        Gizmos.DrawWireCube(Vector3.zero, halfExtents * 2);
 
         // Reset matrix
         Gizmos.matrix = Matrix4x4.identity;
