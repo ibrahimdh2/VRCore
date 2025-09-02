@@ -18,12 +18,18 @@ public class DataManager : MonoBehaviour
 
     [SerializeField] private InputAction startRecord;
     [SerializeField] private GameObject recordingCanvas;
+    public BoxCollider bikeCollider;
+    public static DataManager Instance;
     [Range(0,30f)]
     public float timeScale = 1;
     private void OnEnable()
     {
         startRecord.performed += StartStopRecording;
         startRecord.Enable();
+        if(Instance == null)
+        {
+            Instance = this;
+        }
         
     }
     private void OnDisable()

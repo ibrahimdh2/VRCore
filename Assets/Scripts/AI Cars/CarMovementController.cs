@@ -73,8 +73,14 @@ public class CarMovementController : MonoBehaviour
     public BoxCollider currentCollider;
     private Coroutine moveRoutineCoroutine;
 
+
+
+    private BoxCollider bicycleCollider;
+    [SerializeField] private BoxCollider frontLeftChecBoxCollider;
+    [SerializeField] private BoxCollider frontRightCheckBoxCollider;
     void Awake()
     {
+        bicycleCollider = DataManager.Instance.bikeCollider;
         currentCollider = GetComponent<BoxCollider>();
         if (frontLeftWheel != null) frontLeftOriginalRotation = frontLeftWheel.localRotation;
         if (frontRightWheel != null) frontRightOriginalRotation = frontRightWheel.localRotation;
@@ -130,6 +136,17 @@ public class CarMovementController : MonoBehaviour
         Vector3 worldCenter = detectionCollider.transform.TransformPoint(localCenter);
         return worldCenter;
     }
+    private Vector3 GetDetectionBoxCenter(BoxCollider c)
+    {
+        if(detectionCollider == null)
+        {
+            return transform.position + Vector3.up * 0.5f;
+        }
+
+        Vector3 localCenter = c.center;
+        Vector3 worldCenter = c.transform.TransformPoint(localCenter);
+        return worldCenter;
+    }
 
     private Vector3 GetDetectionBoxSize()
     {
@@ -145,6 +162,20 @@ public class CarMovementController : MonoBehaviour
         Vector3 worldSize = Vector3.Scale(localSize, lossyScale) * 0.5f; // BoxCast uses half-extents
         return worldSize;
     }
+    private Vector3 GetDetectionBoxSize(BoxCollider c)
+    {
+        if (detectionCollider == null)
+        {
+            // Fallback to original behavior if no collider is assigned
+            return new Vector3(0.5f, 0.5f, 0.5f);
+        }
+
+        // Get the world-space size of the collider
+        Vector3 localSize = c.size;
+        Vector3 lossyScale = c.transform.lossyScale;
+        Vector3 worldSize = Vector3.Scale(localSize, lossyScale) * 0.5f; // BoxCast uses half-extents
+        return worldSize;
+    }
 
     private Quaternion GetDetectionBoxOrientation()
     {
@@ -154,6 +185,15 @@ public class CarMovementController : MonoBehaviour
         }
 
         return detectionCollider.transform.rotation;
+    }
+    private Quaternion GetDetectionBoxOrientation(BoxCollider c)
+    {
+        if (detectionCollider == null)
+        {
+            return transform.rotation;
+        }
+
+        return c.transform.rotation;
     }
 
     private void FixedUpdate()
