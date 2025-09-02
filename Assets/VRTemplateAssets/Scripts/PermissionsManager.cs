@@ -79,7 +79,8 @@ namespace Unity.VRTemplate
                 }
                 else
                 {
-                    Debug.Log($"User has permission for: {permission.m_PermissionId}", this);
+                    
+                ($"User has permission for: {permission.m_PermissionId}", this);
                 }
                 m_CurrentPermissionIdx++;
             }

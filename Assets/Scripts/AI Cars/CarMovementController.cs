@@ -22,6 +22,13 @@ public class CarMovementController : MonoBehaviour
     public Vector3 halfExtents = new Vector3(0.5f, 0.5f, 0.5f);
     public Vector3 boxOffset = Vector3.zero;
 
+    [Header("Turn Detection Settings")]
+    public float turnDetectionAngleThreshold = 10f; // Minimum angle to trigger turn detection
+    public float turnBoxcastLength = 3f; // Length of the turn detection boxcast
+    public bool enableTurnDetection = true; // Toggle for turn detection feature
+    public Transform leftTurnRayCastStartingPoint;
+    public Transform rightTurnRayCastStartingPoint;
+    public float rayDistance;
     [Header("Stop/Signal Settings")]
     public SignalStoppingVehicle signalStoppingVehicle;
     public float delayTimeAfterStopping = 4f;
@@ -37,13 +44,13 @@ public class CarMovementController : MonoBehaviour
     [Header("Debug Settings")]
     public bool enableDebugLogs = false; // Enable to see signal state logs
 
-   [SerializeField] private Transform[] waypoints;
+    [SerializeField] private Transform[] waypoints;
     [SerializeField] private int currentWaypointIndex = 0;
 
     private Quaternion frontLeftOriginalRotation;
     private Quaternion frontRightOriginalRotation;
 
-    [SerializeField]private float currentSpeed = 0f;
+    [SerializeField] private float currentSpeed = 0f;
     private bool isPaused = false;
     private bool collidingWithCar = false;
     private WaitForSeconds waitFor;
@@ -62,10 +69,12 @@ public class CarMovementController : MonoBehaviour
     private Vector3 lastPosition;
     private float lastProgressTime;
 
+    public BoxCollider currentCollider;
     private Coroutine moveRoutineCoroutine;
 
     void Awake()
     {
+        currentCollider = GetComponent<BoxCollider>();
         if (frontLeftWheel != null) frontLeftOriginalRotation = frontLeftWheel.localRotation;
         if (frontRightWheel != null) frontRightOriginalRotation = frontRightWheel.localRotation;
 
@@ -111,10 +120,10 @@ public class CarMovementController : MonoBehaviour
             // If reached waypoint -> switch
             if (distance < waypointTolerance)
             {
-                if (currentWaypointIndex + 1 > waypoints.Length-1)
+                if (currentWaypointIndex + 1 > waypoints.Length - 1)
                 {
                     VehiclePoolManager.Instance.ReturnCar(this.gameObject);
-                    Debug.Log("Should return to the pool");
+                    //Debug.Log("Should return to the pool");
                 }
                 currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
                 // reset progress tracking so we don't false-detect deadlock immediately
@@ -137,6 +146,10 @@ public class CarMovementController : MonoBehaviour
                 yield return null;
                 continue;
             }
+            
+            // --- Calculate direction and angle for both movement and detection ---
+            Vector3 currentDir = transform.forward;
+            float angleToTarget = Vector3.Angle(currentDir, toTarget.normalized);
 
             // --- Obstacle & pausing checks (similar to HandlePausing) ---
             bool shouldPause = false;
@@ -147,6 +160,7 @@ public class CarMovementController : MonoBehaviour
             }
             else
             {
+                // Original forward boxcast
                 Vector3 boxCenter = transform.position + boxOffset + Vector3.up * 0.5f;
                 Quaternion orientation = transform.rotation;
                 if (Physics.BoxCast(boxCenter, halfExtents, transform.forward, out RaycastHit hit, orientation, raycastLength))
@@ -156,6 +170,53 @@ public class CarMovementController : MonoBehaviour
                         shouldPause = true;
                     }
                 }
+
+                // NEW: Turn detection boxcast
+                if (!shouldPause && enableTurnDetection)
+                {
+                    // Only check turn direction if we're making a significant turn
+                    if (angleToTarget > turnDetectionAngleThreshold)
+                    {
+                        Transform currentWayPoint = waypoints[currentWaypointIndex];
+                        Vector3 turnDirection = (currentWayPoint.position - transform.position).normalized;
+
+                        // Cast from both left and right origins
+                        Transform[] rayOrigins = new Transform[]
+                        {
+            leftTurnRayCastStartingPoint,
+            rightTurnRayCastStartingPoint
+                        };
+
+                        foreach (var rayOrigin in rayOrigins)
+                        {
+                            if (Physics.Raycast(rayOrigin.position, turnDirection, out RaycastHit turnHit, rayDistance))
+                            {
+                                // Debug ray visualization
+                                Debug.DrawRay(rayOrigin.position,
+                                    turnDirection * rayDistance,
+                                    turnHit.collider.CompareTag("Vehicle") ? Color.red : Color.yellow,
+                                    0.1f);
+
+                                if (turnHit.collider.CompareTag("Vehicle") && turnHit.collider != currentCollider)
+                                {
+                                    shouldPause = true;
+                                    if (enableDebugLogs)
+                                        Debug.Log($"{gameObject.name}: Turn detection - Vehicle detected in turn direction from {rayOrigin.name}");
+                                    break; // Stop checking once we found a blocking vehicle
+                                }
+                            }
+                            else
+                            {
+                                // Draw ray even when nothing is hit (for debugging)
+                                Debug.DrawRay(rayOrigin.position,
+                                    turnDirection * rayDistance,
+                                    Color.green,
+                                    0.1f);
+                            }
+                        }
+                    }
+                }
+
             }
 
             // Traffic signal check
@@ -192,9 +253,7 @@ public class CarMovementController : MonoBehaviour
             }
 
             // --- Movement and steering when not paused ---
-            // direction & angle
-            Vector3 currentDir = transform.forward;
-            float angleToTarget = Vector3.Angle(currentDir, toTarget.normalized);
+            // Use the already calculated direction & angle
 
             // Adaptive speed target (sharp turn => slow down)
             float targetSpeed;
@@ -264,7 +323,18 @@ public class CarMovementController : MonoBehaviour
         lastPosition = transform.position;
         lastProgressTime = Time.time;
     }
+    public bool IsRight(Vector3 origin, Vector3 forward, Vector3 target)
+    {
+        Vector3 toTarget = target - origin;
 
+        // Cross product sign determines left vs right
+        float crossY = Vector3.Cross(forward, toTarget).y;
+
+        return crossY < 0f; // negative => right, positive => left
+    }
+
+   
+  
     private void EndYieldingImmediate()
     {
         isYielding = false;
@@ -467,8 +537,19 @@ public class CarMovementController : MonoBehaviour
         Gizmos.color = Color.red;
         Vector3 boxCenter = transform.position + boxOffset + Vector3.up * 0.5f;
         Quaternion orientation = transform.rotation;
+
+        // Draw original forward detection box
         Matrix4x4 rotationMatrix = Matrix4x4.TRS(boxCenter + transform.forward * raycastLength * 0.5f, orientation, Vector3.one);
         Gizmos.matrix = rotationMatrix;
         Gizmos.DrawWireCube(Vector3.zero, halfExtents * 2 + new Vector3(0, 0, raycastLength));
+
+        // Draw turn detection box if enabled and we have waypoints
+        if (enableTurnDetection && waypoints != null && waypoints.Length > 0 && currentWaypointIndex < waypoints.Length)
+        {
+
+        }
+
+        // Reset matrix
+        Gizmos.matrix = Matrix4x4.identity;
     }
 }

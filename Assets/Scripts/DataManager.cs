@@ -77,7 +77,7 @@ public class DataManager : MonoBehaviour
                 {
                     orderedDictionary.Add(timeStamp, (sensorSpeed: speed, bikeSpeed: bikeController.GetBicycleVelocity()));
                     lastRecordedTime = Time.time;
-                    Debug.Log($"Recorded: {timeStamp} - {speed} KPH"); // Debug logging
+                   // Debug.Log($"Recorded: {timeStamp} - {speed} KPH"); // Debug logging
                 }
             } 
         }

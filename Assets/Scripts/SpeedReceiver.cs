@@ -93,7 +93,7 @@ public class SpeedReceiver : MonoBehaviour
             {
                 return;
             }
-            Debug.Log($"[ZMQ] Received speed on main thread: {latestSpeed:F2} km/h");
+            //Debug.Log($"[ZMQ] Received speed on main thread: {latestSpeed:F2} km/h");
         }
 
         float timeSinceLast = Time.time - lastReceivedTime;
@@ -103,7 +103,7 @@ public class SpeedReceiver : MonoBehaviour
             if (latestSpeed > 0f)
             {
                 latestSpeed = Mathf.Max(0f, latestSpeed - decelerationRate * Time.deltaTime);
-                Debug.Log($"[ZMQ] Decaying speed: {latestSpeed:F2} km/h");
+              //  Debug.Log($"[ZMQ] Decaying speed: {latestSpeed:F2} km/h");
             }
         }
     }

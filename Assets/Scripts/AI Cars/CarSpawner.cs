@@ -92,7 +92,8 @@ public class CarSpawner : MonoBehaviour
         foreach (var hit in hits)
         {
             if (hit.CompareTag("Vehicle"))
-            { Debug.Log("Car is there don't spawn another"); return false; }
+            {// Debug.Log("Car is there don't spawn another"); 
+                return false; }
         }
         return true;
     }
