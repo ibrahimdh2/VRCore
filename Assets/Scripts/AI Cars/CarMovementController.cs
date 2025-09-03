@@ -109,6 +109,9 @@ public class CarMovementController : MonoBehaviour
     private int vehicleLayerMask;
     private int bicycleLayerMask;
 
+    private float deadLockResumeDelay = 3f;
+    private WaitForSeconds deadLockResumeWaitFor;
+
     void Awake()
     {
         // Safe DataManager access
@@ -124,6 +127,7 @@ public class CarMovementController : MonoBehaviour
 
     void Start()
     {
+        deadLockResumeWaitFor = new WaitForSeconds(deadLockResumeDelay);
         // Retry DataManager access if failed in Awake
         if (bicycleCollider == null && DataManager.Instance != null)
         {
@@ -637,7 +641,6 @@ public class CarMovementController : MonoBehaviour
 
     private void ResolveDeadlock()
     {
-        // Optimized nearby vehicle search
         Collider[] nearby = Physics.OverlapSphere(transform.position, 3f, vehicleLayerMask);
         CarMovementController otherCar = null;
 
@@ -655,20 +658,45 @@ public class CarMovementController : MonoBehaviour
 
         if (otherCar != null)
         {
-            if (vehiclePriority < otherCar.vehiclePriority)
-                StartYielding();
-            else if (vehiclePriority > otherCar.vehiclePriority)
-                ForceResume();
-            else
+            Vector3 myForward = transform.forward.normalized;
+            Vector3 otherForward = otherCar.transform.forward.normalized;
+
+            bool sameDirection = Vector3.Dot(myForward, otherForward) > 0.9f; // close to parallel
+
+            if (sameDirection)
             {
-                if (transform.position.x < otherCar.transform.position.x)
+                // Check which one is ahead (compare along the forward direction)
+                float myProjection = Vector3.Dot(transform.position, myForward);
+                float otherProjection = Vector3.Dot(otherCar.transform.position, myForward);
+
+                if (myProjection > otherProjection)
                 {
-                    StartYielding();
+                    // I'm ahead → move immediately
+                    ForceResume();
+                    // other car will wait
+                    otherCar.StartCoroutine(otherCar.ResumeWithDelay());
                 }
                 else
                 {
+                    // I'm behind → wait 3s
+                    StartCoroutine(ResumeWithDelay());
+                    // let the other car move immediately
+                    otherCar.ForceResume();
+                }
+            }
+            else
+            {
+                // Fallback to your existing priority-based logic
+                if (vehiclePriority < otherCar.vehiclePriority)
+                    StartYielding();
+                else if (vehiclePriority > otherCar.vehiclePriority)
                     ForceResume();
-
+                else
+                {
+                    if (transform.position.x < otherCar.transform.position.x)
+                        StartYielding();
+                    else
+                        ForceResume();
                 }
             }
         }
@@ -677,6 +705,15 @@ public class CarMovementController : MonoBehaviour
             ForceResume();
         }
     }
+
+    private IEnumerator ResumeWithDelay()
+    {
+        yield return deadLockResumeWaitFor;
+        collidingWithCar = false;
+        isPaused = false;
+        UpdateProgressTracking();
+    }
+
 
     private void StartYielding()
     {
