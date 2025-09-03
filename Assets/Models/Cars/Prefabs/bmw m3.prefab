@@ -573,7 +573,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 6.36}
-  m_LocalScale: {x: 1.25, y: 1.25, z: 1.25}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8631758155456043254}
@@ -627,11 +627,10 @@ MonoBehaviour:
   currentWaypointIndex: 0
   currentSpeed: 0
   currentCollider: {fileID: 7615613077229417303}
-  frontLeftCheckBoxCollider: {fileID: 0}
+  frontLeftCheckBoxCollider: {fileID: 2905568095258961677}
   frontRightCheckBoxCollider: {fileID: 8971364181983733477}
   avoidanceDistance: 0.5
   checkFrontLeftAndRightAvoidBicycle: 1
-  currentBoxcastType: 0
 --- !u!54 &682358090601085955
 Rigidbody:
   m_ObjectHideFlags: 0
