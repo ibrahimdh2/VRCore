@@ -43,6 +43,11 @@ public class CarMovementController : MonoBehaviour
     public float maxWaitTime = 3f;
     public float yieldDistance = 2f;
 
+    [Header("Waypoint Timeout Settings")]
+    public float waypointTimeoutBuffer = 2f; // Extra time buffer beyond calculated travel time
+    public float minWaypointTimeout = 5f; // Minimum timeout regardless of distance
+    public float maxWaypointTimeout = 15f; // Maximum timeout to prevent indefinite waiting
+
     [Header("Speed Control")]
     public float speedChangeRate = 2f;
 
@@ -75,6 +80,14 @@ public class CarMovementController : MonoBehaviour
     private Vector3 lastPosition;
     private float lastProgressTime;
 
+    // Waypoint timeout system - MODIFIED
+    private float waypointStartTime;
+    private float waypointTimeoutDuration;
+    private Vector3 waypointStartPosition;
+    private float initialDistanceToWaypoint;
+    private float pausedTimeAccumulator = 0f; // NEW: Tracks time spent paused
+    private bool waypointTimerPaused = false; // NEW: Flag to pause timer
+
     public BoxCollider currentCollider;
     private Coroutine moveRoutineCoroutine;
 
@@ -85,6 +98,9 @@ public class CarMovementController : MonoBehaviour
     private int leftRightBoxCastRayLength;
     public float avoidanceDistance;
     public bool checkFrontLeftAndRightAvoidBicycle;
+
+    // NEW: Bicycle collision tracking
+    private bool collidingWithBicycle = false;
 
     // Intersection safety variables
     private bool useIntersectionCollider = false;
@@ -336,12 +352,116 @@ public class CarMovementController : MonoBehaviour
         }
     }
 
+    // MODIFIED: Calculate timeout for reaching waypoint based on distance and speed
+    private void SetWaypointTimeout(Transform targetWaypoint)
+    {
+        waypointStartTime = Time.time;
+        waypointStartPosition = transform.position;
+        pausedTimeAccumulator = 0f; // Reset paused time accumulator
+
+        // Calculate distance to waypoint
+        initialDistanceToWaypoint = Vector3.Distance(transform.position, targetWaypoint.position);
+
+        // Calculate expected travel time based on current max speed (with safety factor for acceleration/deceleration)
+        float averageSpeed = currentMaxSpeed * 0.7f; // Account for acceleration/deceleration and obstacles
+        float expectedTravelTime = initialDistanceToWaypoint / Mathf.Max(averageSpeed, 1f);
+
+        // Add buffer time and apply min/max constraints
+        waypointTimeoutDuration = Mathf.Clamp(expectedTravelTime + waypointTimeoutBuffer, minWaypointTimeout, maxWaypointTimeout);
+
+        if (enableDebugLogs)
+        {
+            Debug.Log($"{name}: Set waypoint timeout - Distance: {initialDistanceToWaypoint:F1}m, Expected time: {expectedTravelTime:F1}s, Total timeout: {waypointTimeoutDuration:F1}s");
+        }
+    }
+
+    // MODIFIED: Check if waypoint timeout has been exceeded (accounting for paused time)
+    private bool IsWaypointTimedOut()
+    {
+        float elapsed = Time.time - waypointStartTime - pausedTimeAccumulator;
+        bool timedOut = elapsed > waypointTimeoutDuration;
+
+        if (timedOut && enableDebugLogs)
+        {
+            float currentDistance = Vector3.Distance(transform.position, waypoints[currentWaypointIndex].position);
+            Debug.Log($"{name}: Waypoint timeout! Elapsed: {elapsed:F1}s, Timeout: {waypointTimeoutDuration:F1}s, Distance remaining: {currentDistance:F1}m, Paused time: {pausedTimeAccumulator:F1}s");
+        }
+
+        return timedOut;
+    }
+
+    // NEW: Update paused time accumulator
+    private void UpdateWaypointTimer(bool shouldPauseTimer)
+    {
+        if (shouldPauseTimer && !waypointTimerPaused)
+        {
+            // Just started pausing
+            waypointTimerPaused = true;
+            if (enableDebugLogs)
+            {
+                Debug.Log($"{name}: Pausing waypoint timer (signal/obstacle)");
+            }
+        }
+        else if (!shouldPauseTimer && waypointTimerPaused)
+        {
+            // Just resumed
+            waypointTimerPaused = false;
+            if (enableDebugLogs)
+            {
+                Debug.Log($"{name}: Resuming waypoint timer, total paused time: {pausedTimeAccumulator:F1}s");
+            }
+        }
+
+        // Accumulate paused time
+        if (waypointTimerPaused)
+        {
+            pausedTimeAccumulator += Time.deltaTime;
+        }
+    }
+
+    // NEW: Force skip to next waypoint
+    private void ForceNextWaypoint()
+    {
+        if (enableDebugLogs)
+        {
+            Debug.Log($"{name}: Forcing skip to next waypoint due to timeout");
+        }
+
+        // Move to next waypoint
+        if (currentWaypointIndex + 1 > waypoints.Length - 1)
+        {
+            VehiclePoolManager.Instance.ReturnCar(gameObject);
+            return;
+        }
+
+        currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+
+        // Set new waypoint timeout
+        SetWaypointTimeout(waypoints[currentWaypointIndex]);
+
+        // Reset states
+        lastPosition = transform.position;
+        lastProgressTime = Time.time;
+        collidingWithCar = false;
+        collidingWithBicycle = false; // NEW: Reset bicycle collision
+        isPaused = false;
+        isYielding = false;
+        currentSpeed = 0f;
+        waypointTimerPaused = false; // NEW: Reset timer pause state
+    }
+
     private IEnumerator MoveRoutine()
     {
         if (waypoints == null || waypoints.Length == 0) yield break;
 
         lastPosition = transform.position;
         lastProgressTime = Time.time;
+
+        // Initialize waypoint timeout for first waypoint
+        if (waypoints.Length > currentWaypointIndex)
+        {
+            SetWaypointTimeout(waypoints[currentWaypointIndex]);
+        }
 
         // Cache frequently used values
         Transform thisTransform = transform;
@@ -367,6 +487,13 @@ public class CarMovementController : MonoBehaviour
                     VehiclePoolManager.Instance.ReturnCar(gameObject);
                 }
                 currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
+
+                // Set timeout for new waypoint
+                if (waypoints.Length > currentWaypointIndex)
+                {
+                    SetWaypointTimeout(waypoints[currentWaypointIndex]);
+                }
+
                 lastPosition = thisTransform.position;
                 lastProgressTime = Time.time;
                 yield return null;
@@ -394,16 +521,34 @@ public class CarMovementController : MonoBehaviour
             bool shouldPause = CheckObstacles(deltaTime);
 
             // Traffic signal check (only if not already paused)
+            bool stoppedAtSignal = false;
             if (!shouldPause && signalStoppingVehicle?.signal != null)
             {
-                shouldPause = signalStoppingVehicle.signal.State != LightState.Green;
+                stoppedAtSignal = signalStoppingVehicle.signal.State != LightState.Green;
+                shouldPause = stoppedAtSignal;
             }
+
+            // MODIFIED: Update waypoint timer based on pause reasons
+            bool shouldPauseTimer = stoppedAtSignal || collidingWithBicycle; // NEW: Pause timer for signals and bicycle collisions
+            UpdateWaypointTimer(shouldPauseTimer);
 
             isPaused = shouldPause;
 
             if (isPaused)
             {
-                HandleDeadlockDetection();
+                // MODIFIED: Only handle deadlock if not colliding with bicycle and not stopped at signal
+                if (!collidingWithBicycle && !stoppedAtSignal)
+                {
+                    HandleDeadlockDetection();
+                }
+                yield return null;
+                continue;
+            }
+
+            // MODIFIED: Check waypoint timeout after checking if we should pause
+            if (!waypointTimerPaused && IsWaypointTimedOut())
+            {
+                ForceNextWaypoint();
                 yield return null;
                 continue;
             }
@@ -429,11 +574,35 @@ public class CarMovementController : MonoBehaviour
         {
             if (hit.collider.CompareTag("Vehicle"))
             {
-                if (enableDebugLogs && useIntersectionCollider)
+                // NEW: Check if it's a bicycle collision
+                if (hit.collider == bicycleCollider)
                 {
-                    Debug.Log($"{name}: Intersection safety detection - Vehicle detected ahead");
+                    collidingWithBicycle = true;
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"{name}: Detected bicycle ahead - pausing and pausing waypoint timer");
+                    }
+                }
+                else
+                {
+                    if (enableDebugLogs && useIntersectionCollider)
+                    {
+                        Debug.Log($"{name}: Intersection safety detection - Vehicle detected ahead");
+                    }
                 }
                 return true;
+            }
+        }
+        else
+        {
+            // NEW: Clear bicycle collision flag when no longer detecting bicycle
+            if (collidingWithBicycle)
+            {
+                collidingWithBicycle = false;
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"{name}: No longer detecting bicycle - resuming");
+                }
             }
         }
 
@@ -464,7 +633,10 @@ public class CarMovementController : MonoBehaviour
             transform.forward, out RaycastHit leftHit, leftDetectionBox.orientation, leftRightBoxCastRayLength))
         {
             if (leftHit.collider == bicycleCollider)
+            {
                 leftHasBicycle = true;
+                collidingWithBicycle = true; // NEW: Set bicycle collision flag
+            }
             else if (leftHit.collider.CompareTag("Vehicle"))
                 leftHasVehicle = true;
         }
@@ -475,9 +647,22 @@ public class CarMovementController : MonoBehaviour
             transform.forward, out RaycastHit rightHit, rightDetectionBox.orientation, leftRightBoxCastRayLength))
         {
             if (rightHit.collider == bicycleCollider)
+            {
                 rightHasBicycle = true;
+                collidingWithBicycle = true; // NEW: Set bicycle collision flag
+            }
             else if (rightHit.collider.CompareTag("Vehicle"))
                 rightHasVehicle = true;
+        }
+
+        // NEW: Clear bicycle collision if no bicycle detected on either side
+        if (!leftHasBicycle && !rightHasBicycle && collidingWithBicycle)
+        {
+            collidingWithBicycle = false;
+            if (enableDebugLogs)
+            {
+                Debug.Log($"{name}: No longer avoiding bicycle");
+            }
         }
 
         // Optimized decision logic
@@ -485,7 +670,7 @@ public class CarMovementController : MonoBehaviour
         {
             if (leftHasBicycle && rightHasBicycle)
             {
-                if (enableDebugLogs) Debug.Log($"{name}: Both sides have bicycles - stopping");
+                if (enableDebugLogs) Debug.Log($"{name}: Both sides have bicycles - stopping and pausing waypoint timer");
                 return true;
             }
 
@@ -508,7 +693,7 @@ public class CarMovementController : MonoBehaviour
             }
 
             // Bicycle present but opposite side blocked
-            if (enableDebugLogs) Debug.Log($"{name}: Bicycle detected but escape route blocked");
+            if (enableDebugLogs) Debug.Log($"{name}: Bicycle detected but escape route blocked - stopping and pausing waypoint timer");
             return true;
         }
 
@@ -534,8 +719,18 @@ public class CarMovementController : MonoBehaviour
             {
                 if (turnHit.collider.CompareTag("Vehicle") && turnHit.collider != currentCollider)
                 {
-                    if (enableDebugLogs)
-                        Debug.Log($"{name}: Turn blocked by vehicle from {rayOrigin.name}");
+                    // NEW: Check if it's a bicycle
+                    if (turnHit.collider == bicycleCollider)
+                    {
+                        collidingWithBicycle = true;
+                        if (enableDebugLogs)
+                            Debug.Log($"{name}: Turn blocked by bicycle from {rayOrigin.name} - pausing waypoint timer");
+                    }
+                    else
+                    {
+                        if (enableDebugLogs)
+                            Debug.Log($"{name}: Turn blocked by vehicle from {rayOrigin.name}");
+                    }
                     return true;
                 }
             }
@@ -641,6 +836,16 @@ public class CarMovementController : MonoBehaviour
 
     private void ResolveDeadlock()
     {
+        // MODIFIED: Don't resolve deadlock if colliding with bicycle
+        if (collidingWithBicycle)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log($"{name}: Deadlock resolution skipped - colliding with bicycle");
+            }
+            return;
+        }
+
         Collider[] nearby = Physics.OverlapSphere(transform.position, 3f, vehicleLayerMask);
         CarMovementController otherCar = null;
 
@@ -649,7 +854,7 @@ public class CarMovementController : MonoBehaviour
             if (col.gameObject == gameObject) continue;
 
             var comp = col.GetComponent<CarMovementController>();
-            if (comp != null && comp.collidingWithCar)
+            if (comp != null && comp.collidingWithCar && !comp.collidingWithBicycle) // NEW: Only consider cars not colliding with bicycles
             {
                 otherCar = comp;
                 break;
@@ -714,7 +919,6 @@ public class CarMovementController : MonoBehaviour
         UpdateProgressTracking();
     }
 
-
     private void StartYielding()
     {
         isYielding = true;
@@ -743,9 +947,16 @@ public class CarMovementController : MonoBehaviour
             Vector3 wayPointDir = (waypoints[1].position - transform.position).normalized;
             wayPointDir.y = 0;
             transform.rotation = Quaternion.LookRotation(wayPointDir);
+
+            // Set initial waypoint timeout
+            SetWaypointTimeout(waypoints[currentWaypointIndex]);
         }
 
         currentSpeed = 0f;
+        // NEW: Reset states
+        collidingWithBicycle = false;
+        waypointTimerPaused = false;
+        pausedTimeAccumulator = 0f;
 
         if (moveRoutineCoroutine != null) StopCoroutine(moveRoutineCoroutine);
         moveRoutineCoroutine = StartCoroutine(MoveRoutine());
@@ -760,6 +971,28 @@ public class CarMovementController : MonoBehaviour
     public float GetCurrentMaxSpeed() => currentMaxSpeed;
     public float GetTargetMaxSpeed() => targetMaxSpeed;
     public bool IsSpeedChanging() => Mathf.Abs(currentMaxSpeed - targetMaxSpeed) > 0.01f;
+
+    // MODIFIED: Public methods for waypoint timeout information (accounting for paused time)
+    public float GetWaypointTimeRemaining()
+    {
+        float elapsed = Time.time - waypointStartTime - pausedTimeAccumulator;
+        return Mathf.Max(0f, waypointTimeoutDuration - elapsed);
+    }
+
+    public float GetWaypointProgress()
+    {
+        if (waypoints == null || waypoints.Length <= currentWaypointIndex) return 0f;
+
+        float currentDistance = Vector3.Distance(transform.position, waypoints[currentWaypointIndex].position);
+        return Mathf.Clamp01(1f - (currentDistance / initialDistanceToWaypoint));
+    }
+
+    public bool IsWaypointTimeoutActive() => waypointTimeoutDuration > 0f;
+
+    // NEW: Public methods for timer status
+    public bool IsWaypointTimerPaused() => waypointTimerPaused;
+    public float GetPausedTimeAccumulated() => pausedTimeAccumulator;
+    public bool IsCollidingWithBicycle() => collidingWithBicycle;
 
     // Public methods for intersection safety control
     public void ForceActivateIntersectionSafety() => ActivateIntersectionSafety();
@@ -783,10 +1016,19 @@ public class CarMovementController : MonoBehaviour
     {
         if (collision.collider.CompareTag("Vehicle"))
         {
-            if (enableDebugLogs) Debug.Log($"{name}: Collision with vehicle");
+            // NEW: Check if colliding with bicycle
+            if (collision.collider == bicycleCollider)
+            {
+                collidingWithBicycle = true;
+                if (enableDebugLogs) Debug.Log($"{name}: Collision with bicycle - pausing waypoint timer");
+            }
+            else
+            {
+                if (enableDebugLogs) Debug.Log($"{name}: Collision with vehicle");
+                collidingWithCar = true;
+                collisionStartTime = Time.time;
+            }
 
-            collidingWithCar = true;
-            collisionStartTime = Time.time;
             isPaused = true;
             lastProgressTime = Time.time;
         }
@@ -796,8 +1038,17 @@ public class CarMovementController : MonoBehaviour
     {
         if (collision.collider.CompareTag("Vehicle"))
         {
-            if (enableDebugLogs) Debug.Log($"{name}: Collision ended");
-            StartCoroutine(ResumeAfterDelay());
+            // NEW: Handle bicycle collision exit
+            if (collision.collider == bicycleCollider)
+            {
+                collidingWithBicycle = false;
+                if (enableDebugLogs) Debug.Log($"{name}: Bicycle collision ended - resuming waypoint timer");
+            }
+            else
+            {
+                if (enableDebugLogs) Debug.Log($"{name}: Vehicle collision ended");
+                StartCoroutine(ResumeAfterDelay());
+            }
         }
     }
 
@@ -830,12 +1081,57 @@ public class CarMovementController : MonoBehaviour
         Gizmos.color = useIntersectionCollider ? Color.cyan : Color.yellow;
         Gizmos.DrawLine(activeCenter, castEndCenter);
 
+        // Draw waypoint timeout information
+        if (Application.isPlaying && waypoints != null && waypoints.Length > currentWaypointIndex)
+        {
+            // Draw line to current waypoint
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine(transform.position, waypoints[currentWaypointIndex].position);
+
+            // Draw waypoint timeout progress
+            Vector3 textPos = transform.position + Vector3.up * 2.5f;
+            float timeRemaining = GetWaypointTimeRemaining();
+            float progress = GetWaypointProgress();
+
+#if UNITY_EDITOR
+            string timerStatus = waypointTimerPaused ? " (PAUSED)" : "";
+            string bicycleStatus = collidingWithBicycle ? " [BICYCLE]" : "";
+            UnityEditor.Handles.Label(textPos, $"Waypoint {currentWaypointIndex}\nTime: {timeRemaining:F1}s{timerStatus}\nProgress: {progress:P0}{bicycleStatus}\nPaused: {pausedTimeAccumulator:F1}s");
+
+            // Draw progress bar above car
+            Vector3 barStart = transform.position + Vector3.up * 4f - Vector3.right * 1f;
+            Vector3 barEnd = transform.position + Vector3.up * 4f + Vector3.right * 1f;
+
+            // Background bar
+            Gizmos.color = Color.gray;
+            Gizmos.DrawLine(barStart, barEnd);
+
+            // Progress bar - different colors based on timer status
+            if (waypointTimerPaused)
+                Gizmos.color = Color.magenta; // Orange when paused
+            else
+                Gizmos.color = timeRemaining > 1f ? Color.green : Color.red;
+
+            Vector3 progressEnd = Vector3.Lerp(barStart, barEnd, progress);
+            Gizmos.DrawLine(barStart, progressEnd);
+#endif
+        }
+
         // Draw intersection safety status
         if (useIntersectionCollider && intersectionDetectionCollider != null)
         {
             Gizmos.color = Color.green;
             Vector3 textPos = transform.position + Vector3.up * 3f;
+#if UNITY_EDITOR
             UnityEditor.Handles.Label(textPos, $"Intersection Safety: {GetRemainingIntersectionSafetyTime():F1}s");
+#endif
+        }
+
+        // NEW: Draw bicycle collision status
+        if (collidingWithBicycle)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(transform.position + Vector3.up * 1f, 0.5f);
         }
     }
 }

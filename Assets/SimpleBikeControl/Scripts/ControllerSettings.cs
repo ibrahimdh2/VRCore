@@ -29,6 +29,10 @@ public class ControllerSettings : MonoBehaviour
 
     public bool bothEyes;
     [SerializeField] private DataManager dataManager;
+    [SerializeField] private Initializer initializer;
+    [SerializeField] private Image optimizeBtnSprite;
+    [SerializeField] private Image limitTrafficBtnSprite;
+
     public bool allowRotationSetting;
 
     private void OnEnable()
@@ -179,6 +183,13 @@ public class ControllerSettings : MonoBehaviour
         Debug.Log($"XR Parent position set {XRRigParentTransform.position}");
         Debug.Log($"XR Parent rotation set {XRRigParentTransform.rotation.eulerAngles}");
         delayUI.text = dataManager.delay.ToString("f2");
+        bool optimize = PlayerPrefs.GetInt("Optimize", 0) == 1?true:false;
+        bool limitTraffic = PlayerPrefs.GetInt("LimitTraffic", 0) == 1 ? true : false;
+        initializer.EnableDisableObjects(optimize);
+        initializer.LimitTraffic(limitTraffic);
+        optimizeBtnSprite.color = optimize ? Color.green : Color.white;
+        limitTrafficBtnSprite.color = limitTraffic ? Color.green : Color.white;
+
         
     }
 
@@ -195,6 +206,8 @@ public class ControllerSettings : MonoBehaviour
         PlayerPrefs.SetFloat("XPosition", XRRigParentTransform.localPosition.x);
         PlayerPrefs.SetFloat("ZPosition", XRRigParentTransform.localPosition.z);
         PlayerPrefs.SetFloat("YPosition", XRRigParentTransform.localPosition.y);
+        PlayerPrefs.SetInt("Optimize", initializer.optimized == true? 1: 0);
+        PlayerPrefs.SetInt("LimitTraffic", initializer.limitTraffic == true? 1: 0);
         
 
 
