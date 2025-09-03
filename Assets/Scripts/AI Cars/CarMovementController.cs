@@ -19,8 +19,12 @@ public class CarMovementController : MonoBehaviour
 
     [Header("Detection Settings")]
     public BoxCollider detectionCollider;
+    public BoxCollider intersectionDetectionCollider;
     public float raycastLength = 5f;
     public float boxcastLength = 1f;
+
+    [Header("Intersection Safety Settings")]
+    public float intersectionSafetyDuration = 3f;
 
     [Header("Turn Detection Settings")]
     public float turnDetectionAngleThreshold = 10f;
@@ -82,6 +86,11 @@ public class CarMovementController : MonoBehaviour
     public float avoidanceDistance;
     public bool checkFrontLeftAndRightAvoidBicycle;
 
+    // Intersection safety variables
+    private bool useIntersectionCollider = false;
+    private float intersectionSafetyStartTime;
+    private LightState previousSignalState = LightState.Red;
+
     // Cached detection data (optimization)
     private struct DetectionBoxData
     {
@@ -91,6 +100,7 @@ public class CarMovementController : MonoBehaviour
     }
 
     private DetectionBoxData mainDetectionBox;
+    private DetectionBoxData intersectionDetectionBox;
     private DetectionBoxData leftDetectionBox;
     private DetectionBoxData rightDetectionBox;
     private bool detectionDataCached = false;
@@ -157,6 +167,16 @@ public class CarMovementController : MonoBehaviour
             };
         }
 
+        if (intersectionDetectionCollider != null)
+        {
+            intersectionDetectionBox = new DetectionBoxData
+            {
+                center = intersectionDetectionCollider.transform.TransformPoint(intersectionDetectionCollider.center),
+                halfExtents = Vector3.Scale(intersectionDetectionCollider.size, intersectionDetectionCollider.transform.lossyScale) * 0.5f,
+                orientation = intersectionDetectionCollider.transform.rotation
+            };
+        }
+
         if (frontLeftCheckBoxCollider != null)
         {
             leftDetectionBox = new DetectionBoxData
@@ -194,16 +214,47 @@ public class CarMovementController : MonoBehaviour
         {
             Debug.LogWarning($"{gameObject.name}: No detection collider assigned!");
         }
+
+        if (intersectionDetectionCollider != null)
+        {
+            intersectionDetectionCollider.enabled = false;
+            if (enableDebugLogs)
+            {
+                Debug.Log($"{gameObject.name}: Intersection detection collider setup - Size: {intersectionDetectionCollider.size}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"{gameObject.name}: No intersection detection collider assigned!");
+        }
     }
 
-    // Optimized detection methods - use cached data
-    private Vector3 GetDetectionBoxCenter() => detectionDataCached ? mainDetectionBox.center : transform.position + Vector3.up * 0.5f;
-    private Vector3 GetDetectionBoxSize() => detectionDataCached ? mainDetectionBox.halfExtents : new Vector3(0.25f, 0.25f, 0.25f);
-    private Quaternion GetDetectionBoxOrientation() => detectionDataCached ? mainDetectionBox.orientation : transform.rotation;
+    // Optimized detection methods - use cached data with intersection safety
+    private Vector3 GetActiveDetectionBoxCenter()
+    {
+        if (useIntersectionCollider && intersectionDetectionCollider != null)
+            return detectionDataCached ? intersectionDetectionBox.center : transform.position + Vector3.up * 0.5f;
+        return detectionDataCached ? mainDetectionBox.center : transform.position + Vector3.up * 0.5f;
+    }
+
+    private Vector3 GetActiveDetectionBoxSize()
+    {
+        if (useIntersectionCollider && intersectionDetectionCollider != null)
+            return detectionDataCached ? intersectionDetectionBox.halfExtents : new Vector3(0.5f, 0.5f, 0.5f);
+        return detectionDataCached ? mainDetectionBox.halfExtents : new Vector3(0.25f, 0.25f, 0.25f);
+    }
+
+    private Quaternion GetActiveDetectionBoxOrientation()
+    {
+        if (useIntersectionCollider && intersectionDetectionCollider != null)
+            return detectionDataCached ? intersectionDetectionBox.orientation : transform.rotation;
+        return detectionDataCached ? mainDetectionBox.orientation : transform.rotation;
+    }
 
     private void FixedUpdate()
     {
         UpdateMaxSpeed();
+        UpdateIntersectionSafety();
 
         // Update cached detection data less frequently for performance
         if (Time.fixedTime % 0.1f < Time.fixedDeltaTime) // Every 0.1 seconds
@@ -212,12 +263,60 @@ public class CarMovementController : MonoBehaviour
         }
     }
 
+    private void UpdateIntersectionSafety()
+    {
+        // Check if we need to activate intersection safety
+        if (signalStoppingVehicle?.signal != null)
+        {
+            LightState currentState = signalStoppingVehicle.signal.State;
+
+            // Detect transition from Red to Green
+            if (previousSignalState == LightState.Red && currentState == LightState.Green)
+            {
+                ActivateIntersectionSafety();
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"{name}: Signal changed from Red to Green - Activating intersection safety for {intersectionSafetyDuration} seconds");
+                }
+            }
+
+            previousSignalState = currentState;
+        }
+
+        // Check if intersection safety period has expired
+        if (useIntersectionCollider && Time.time - intersectionSafetyStartTime >= intersectionSafetyDuration)
+        {
+            DeactivateIntersectionSafety();
+            if (enableDebugLogs)
+            {
+                Debug.Log($"{name}: Intersection safety period ended - Switching back to normal detection");
+            }
+        }
+    }
+
+    private void ActivateIntersectionSafety()
+    {
+        useIntersectionCollider = true;
+        intersectionSafetyStartTime = Time.time;
+    }
+
+    private void DeactivateIntersectionSafety()
+    {
+        useIntersectionCollider = false;
+    }
+
     private void UpdateDetectionCache()
     {
         if (detectionCollider != null)
         {
             mainDetectionBox.center = detectionCollider.transform.TransformPoint(detectionCollider.center);
             mainDetectionBox.orientation = detectionCollider.transform.rotation;
+        }
+
+        if (intersectionDetectionCollider != null)
+        {
+            intersectionDetectionBox.center = intersectionDetectionCollider.transform.TransformPoint(intersectionDetectionCollider.center);
+            intersectionDetectionBox.orientation = intersectionDetectionCollider.transform.rotation;
         }
 
         if (frontLeftCheckBoxCollider != null)
@@ -316,12 +415,20 @@ public class CarMovementController : MonoBehaviour
     {
         if (collidingWithCar) return true;
 
-        // Forward obstacle check
-        if (Physics.BoxCast(mainDetectionBox.center, mainDetectionBox.halfExtents,
-            transform.forward, out RaycastHit hit, mainDetectionBox.orientation, boxcastLength))
+        // Forward obstacle check - use active detection collider (intersection or normal)
+        Vector3 activeCenter = GetActiveDetectionBoxCenter();
+        Vector3 activeHalfExtents = GetActiveDetectionBoxSize();
+        Quaternion activeOrientation = GetActiveDetectionBoxOrientation();
+
+        if (Physics.BoxCast(activeCenter, activeHalfExtents,
+            transform.forward, out RaycastHit hit, activeOrientation, boxcastLength))
         {
             if (hit.collider.CompareTag("Vehicle"))
             {
+                if (enableDebugLogs && useIntersectionCollider)
+                {
+                    Debug.Log($"{name}: Intersection safety detection - Vehicle detected ahead");
+                }
                 return true;
             }
         }
@@ -556,11 +663,11 @@ public class CarMovementController : MonoBehaviour
             {
                 if (transform.position.x < otherCar.transform.position.x)
                 {
-                     StartYielding()  ;
+                    StartYielding();
                 }
                 else
                 {
-                    ForceResume() ;
+                    ForceResume();
 
                 }
             }
@@ -617,6 +724,16 @@ public class CarMovementController : MonoBehaviour
     public float GetTargetMaxSpeed() => targetMaxSpeed;
     public bool IsSpeedChanging() => Mathf.Abs(currentMaxSpeed - targetMaxSpeed) > 0.01f;
 
+    // Public methods for intersection safety control
+    public void ForceActivateIntersectionSafety() => ActivateIntersectionSafety();
+    public void ForceDeactivateIntersectionSafety() => DeactivateIntersectionSafety();
+    public bool IsUsingIntersectionDetection() => useIntersectionCollider;
+    public float GetRemainingIntersectionSafetyTime()
+    {
+        if (!useIntersectionCollider) return 0f;
+        return Mathf.Max(0f, intersectionSafetyDuration - (Time.time - intersectionSafetyStartTime));
+    }
+
     private void UpdateMaxSpeed()
     {
         if (currentMaxSpeed != targetMaxSpeed)
@@ -658,19 +775,30 @@ public class CarMovementController : MonoBehaviour
     // Optimized gizmo drawing
     private void OnDrawGizmosSelected()
     {
-        if (detectionCollider == null) return;
+        if (detectionCollider == null && intersectionDetectionCollider == null) return;
 
-        Gizmos.color = Color.red;
-        Vector3 boxCenter = GetDetectionBoxCenter();
-        Vector3 halfExtents = GetDetectionBoxSize();
-        Vector3 castEndCenter = boxCenter + transform.forward * boxcastLength;
+        // Draw active detection collider
+        Vector3 activeCenter = GetActiveDetectionBoxCenter();
+        Vector3 activeHalfExtents = GetActiveDetectionBoxSize();
+        Vector3 castEndCenter = activeCenter + transform.forward * boxcastLength;
+
+        // Use different colors for different detection modes
+        Gizmos.color = useIntersectionCollider ? Color.magenta : Color.red;
 
         // Draw detection box
-        Gizmos.matrix = Matrix4x4.TRS(castEndCenter, GetDetectionBoxOrientation(), Vector3.one);
-        Gizmos.DrawWireCube(Vector3.zero, halfExtents * 2);
+        Gizmos.matrix = Matrix4x4.TRS(castEndCenter, GetActiveDetectionBoxOrientation(), Vector3.one);
+        Gizmos.DrawWireCube(Vector3.zero, activeHalfExtents * 2);
 
         Gizmos.matrix = Matrix4x4.identity;
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(boxCenter, castEndCenter);
+        Gizmos.color = useIntersectionCollider ? Color.cyan : Color.yellow;
+        Gizmos.DrawLine(activeCenter, castEndCenter);
+
+        // Draw intersection safety status
+        if (useIntersectionCollider && intersectionDetectionCollider != null)
+        {
+            Gizmos.color = Color.green;
+            Vector3 textPos = transform.position + Vector3.up * 3f;
+            UnityEditor.Handles.Label(textPos, $"Intersection Safety: {GetRemainingIntersectionSafetyTime():F1}s");
+        }
     }
 }
