@@ -81,7 +81,7 @@ public class DataManager : MonoBehaviour
                 // Fix: Use timeStamp as key more safely - timestamps should be unique enough
                 if (!orderedDictionary.Contains(timeStamp))
                 {
-                    orderedDictionary.Add(timeStamp, (sensorSpeed: speed, bikeSpeed: bikeController.GetBicycleVelocity()));
+                    orderedDictionary.Add(timeStamp, (sensorSpeed: speed, bikeSpeed: bikeController.GetBicycleSpeed()));
                     lastRecordedTime = Time.time;
                    // Debug.Log($"Recorded: {timeStamp} - {speed} KPH"); // Debug logging
                 }

@@ -96,8 +96,9 @@ public class RigidBodyController : MonoBehaviour
 
     private void HandleMovement()
     {
+        float speedMS = speedReceiver.speedKph / 3.6f;
         // Use forces instead of direct velocity assignment for smoother physics
-        Vector3 targetVelocity = transform.forward * multiplier * speedReceiver.speedKph;
+        Vector3 targetVelocity = transform.forward * speedMS;
         Vector3 velocityDiff = targetVelocity - rb.linearVelocity;
 
         // Apply force toward target velocity
@@ -162,8 +163,8 @@ public class RigidBodyController : MonoBehaviour
         }
     }
 
-    internal float GetBicycleVelocity()
+    internal float GetBicycleSpeed()
     {
-        return rb.linearVelocity.magnitude * multiplier;
+        return rb.linearVelocity.magnitude * 3.6f;
     }
 }
