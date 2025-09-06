@@ -72,7 +72,7 @@ public class SpeedReceiver : MonoBehaviour
         {
             if (latestSpeed > 0f)
             {
-                float decelPerSecond = latestSpeed / 0.5f; // Reduce to 0 in 0.5s
+                float decelPerSecond = latestSpeed / 0.45f; // Reduce to 0 in 0.5s
                 latestSpeed = Mathf.Max(0f, latestSpeed - decelPerSecond * Time.deltaTime);
                 simulateSpeed = latestSpeed;
                // Debug.Log($"[ZMQ] Decaying speed: {latestSpeed:F2} km/h");

@@ -81,8 +81,8 @@ public class RigidBodyController : MonoBehaviour
 
     private void LateUpdate()
     {
-        speedText.text = speedReceiver.speedKph.ToString("f2");
-        simulationSpeedText.text = GetBicycleSpeed().ToString("f2");
+        speedText.text = "sensor: "+speedReceiver.speedKph.ToString("f2");
+        simulationSpeedText.text = "current: "+ GetBicycleSpeed().ToString("f2");
     }
     private void HandleVisualSteering()
     {
