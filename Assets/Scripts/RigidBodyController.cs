@@ -50,8 +50,7 @@ public class RigidBodyController : MonoBehaviour
     void Update()
     {
         // Only handle UI updates and VR input reading in Update
-        speedText.text = speedReceiver.speedKph.ToString("f2");
-        simulationSpeedText.text = rb.linearVelocity.magnitude.ToString("f2");
+        
 
         // Cache VR input for FixedUpdate
         hasValidInput = TryGetHandlebarYawWrapped(out float wrappedYawDeg);
@@ -65,8 +64,10 @@ public class RigidBodyController : MonoBehaviour
 
     private void FixedUpdate()
     {
+
         if (!hasValidInput) return;
 
+        
         // Handle visual steering
         HandleVisualSteering();
 
@@ -78,6 +79,11 @@ public class RigidBodyController : MonoBehaviour
         RotateWheels();
     }
 
+    private void LateUpdate()
+    {
+        speedText.text = speedReceiver.speedKph.ToString("f2");
+        simulationSpeedText.text = GetBicycleSpeed().ToString("f2");
+    }
     private void HandleVisualSteering()
     {
         handlebarAngle = cachedHandlebarAngle;
@@ -97,12 +103,38 @@ public class RigidBodyController : MonoBehaviour
     private void HandleMovement()
     {
         float speedMS = speedReceiver.speedKph / 3.6f;
-        // Use forces instead of direct velocity assignment for smoother physics
-        Vector3 targetVelocity = transform.forward * speedMS;
-        Vector3 velocityDiff = targetVelocity - rb.linearVelocity;
 
-        // Apply force toward target velocity
-        rb.AddForce(velocityDiff * velocityForceMultiplier, ForceMode.Force);
+        // Create target velocity in forward direction
+        Vector3 targetVelocity = transform.forward * speedMS;
+
+        // Preserve vertical velocity (for gravity, jumping, terrain following)
+        targetVelocity.y = rb.linearVelocity.y;
+
+        // Set velocity directly
+        rb.linearVelocity = targetVelocity;
+    }
+
+    // Alternative version if you want to preserve some horizontal components
+    private void HandleMovementAlternative()
+    {
+        float speedMS = speedReceiver.speedKph / 3.6f;
+
+        // Get current velocity
+        Vector3 currentVel = rb.linearVelocity;
+
+        // Project current velocity onto forward direction to get forward speed
+        float currentForwardSpeed = Vector3.Dot(currentVel, transform.forward);
+
+        // Calculate the difference and apply it
+        float speedDiff = speedMS - currentForwardSpeed;
+        Vector3 velocityAdjustment = transform.forward * speedDiff;
+
+        // Apply the adjustment while preserving Y velocity
+        rb.linearVelocity = new Vector3(
+            currentVel.x + velocityAdjustment.x,
+            currentVel.y, // Keep vertical velocity
+            currentVel.z + velocityAdjustment.z
+        );
     }
 
     private void HandleSteering()
